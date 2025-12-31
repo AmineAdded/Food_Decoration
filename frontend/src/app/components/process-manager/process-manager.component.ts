@@ -1,13 +1,14 @@
 // frontend/src/app/components/process-manager/process-manager.component.ts
-import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ProcessService, ProcessSimpleResponse } from '../../services/process.service';
 
 export interface ProcessDetail {
   id: string;
   name: string;
-  tempsParPF: number; // Temps en secondes par PF
-  cadenceMax: number; // Cadence maximale en pcs/Machine/H
+  tempsParPF: number;
+  cadenceMax: number;
 }
 
 @Component({
@@ -108,7 +109,6 @@ export interface ProcessDetail {
       min-height: 40px;
     }
 
-    /* Mode affichage */
     .process-display {
       min-height: 32px;
       display: flex;
@@ -162,7 +162,6 @@ export interface ProcessDetail {
       stroke-width: 2;
     }
 
-    /* Mode édition */
     .process-editor {
       display: flex;
       flex-direction: column;
@@ -273,30 +272,20 @@ export interface ProcessDetail {
     }
   `]
 })
-export class ProcessManagerComponent {
+export class ProcessManagerComponent implements OnInit {
   @Input() processes: ProcessDetail[] = [];
   @Input() isEditing: boolean = false;
   @Output() processesChange = new EventEmitter<ProcessDetail[]>();
 
   selectedProcess = '';
   localProcesses = signal<ProcessDetail[]>([]);
+  availableProcessList = signal<string[]>([]);
 
-  // Liste des process disponibles
-  availableProcessList = [
-    'Découpe',
-    'Assemblage',
-    'Peinture',
-    'Vernissage',
-    'Séchage',
-    'Emballage',
-    'Contrôle Qualité',
-    'Montage',
-    'Finition',
-    'Conditionnement'
-  ];
+  constructor(private processService: ProcessService) {}
 
   ngOnInit() {
     this.localProcesses.set([...this.processes]);
+    this.loadAvailableProcess();
   }
 
   ngOnChanges() {
@@ -305,9 +294,23 @@ export class ProcessManagerComponent {
     }
   }
 
+  loadAvailableProcess() {
+    this.processService.getAllProcessSimple().subscribe({
+      next: (process) => {
+        const processNames = process
+          .map(p => p.nom)
+          .sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+        this.availableProcessList.set(processNames);
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des process:', error);
+      }
+    });
+  }
+
   availableProcesses() {
     const usedProcesses = this.localProcesses().map(p => p.name);
-    return this.availableProcessList.filter(p => !usedProcesses.includes(p));
+    return this.availableProcessList().filter(p => !usedProcesses.includes(p));
   }
 
   addProcess() {

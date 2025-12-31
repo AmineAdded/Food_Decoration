@@ -8,6 +8,7 @@ import { UserService, UpdateProfileRequest, ChangePasswordRequest } from '../../
 import { DashboardNavbarComponent } from '../../components/dashboard-navbar/dashboard-navbar.component';
 import { ArticlesTableComponent } from '../../components/articles-table/articles-table.component';
 import { ClientsTableComponent } from '../../components/clients-table/clients-table.component';
+import { ProcessTableComponent } from '../../components/process-table/process-table.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,7 +18,8 @@ import { ClientsTableComponent } from '../../components/clients-table/clients-ta
     FormsModule,
     DashboardNavbarComponent,
     ArticlesTableComponent,
-    ClientsTableComponent
+    ClientsTableComponent,
+    ProcessTableComponent
   ],
   template: `
     <div class="dashboard-container">
@@ -30,10 +32,8 @@ import { ClientsTableComponent } from '../../components/clients-table/clients-ta
         <app-articles-table *ngIf="activeMenu() === 'articles'"></app-articles-table>
 <app-clients-table *ngIf="activeMenu() === 'clients'"></app-clients-table>
 
-<!-- Process sera ajouté plus tard -->
-<div *ngIf="activeMenu() === 'process'" class="coming-soon">
-  <h2>Process - En développement</h2>
-</div>
+<!-- Process  -->
+<app-process-table *ngIf="activeMenu() === 'process'"></app-process-table>
 
 <!-- État - nouvelle section -->
 <div *ngIf="activeMenu() === 'etat'" class="coming-soon">
