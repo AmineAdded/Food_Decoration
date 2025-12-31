@@ -99,7 +99,6 @@ export class ClientsTableComponent implements OnInit {
       devise: '',
       modeTransport: '',
       incoTerme: '',
-      notes: '',
       isActive: true,
       createdAt: '',
       updatedAt: '',
@@ -149,8 +148,7 @@ export class ClientsTableComponent implements OnInit {
         adresseFacturation: client.adresseFacturation,
         devise: client.devise,
         modeTransport: client.modeTransport,
-        incoTerme: client.incoTerme,
-        notes: client.notes
+        incoTerme: client.incoTerme
       };
 
       this.clientService.createClient(request).subscribe({
@@ -173,8 +171,7 @@ export class ClientsTableComponent implements OnInit {
         adresseFacturation: client.adresseFacturation,
         devise: client.devise,
         modeTransport: client.modeTransport,
-        incoTerme: client.incoTerme,
-        notes: client.notes
+        incoTerme: client.incoTerme
       };
 
       this.clientService.updateClient(client.id, request).subscribe({
