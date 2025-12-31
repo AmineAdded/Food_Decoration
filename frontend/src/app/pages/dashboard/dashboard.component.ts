@@ -13,26 +13,32 @@ import { ClientsTableComponent } from '../../components/clients-table/clients-ta
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    DashboardNavbarComponent, 
+    CommonModule,
+    FormsModule,
+    DashboardNavbarComponent,
     ArticlesTableComponent,
     ClientsTableComponent
   ],
   template: `
     <div class="dashboard-container">
-      <app-dashboard-navbar 
+      <app-dashboard-navbar
         (profileClick)="showProfileModal.set(true)"
         (menuChange)="activeMenu.set($event)">
       </app-dashboard-navbar>
 
       <div class="dashboard-content">
         <app-articles-table *ngIf="activeMenu() === 'articles'"></app-articles-table>
-        <app-clients-table *ngIf="activeMenu() === 'clients'"></app-clients-table>
-        <!-- Process sera ajouté plus tard -->
-        <div *ngIf="activeMenu() === 'process'" class="coming-soon">
-          <h2>Process - En développement</h2>
-        </div>
+<app-clients-table *ngIf="activeMenu() === 'clients'"></app-clients-table>
+
+<!-- Process sera ajouté plus tard -->
+<div *ngIf="activeMenu() === 'process'" class="coming-soon">
+  <h2>Process - En développement</h2>
+</div>
+
+<!-- État - nouvelle section -->
+<div *ngIf="activeMenu() === 'etat'" class="coming-soon">
+  <h2>État - En développement</h2>
+</div>
       </div>
 
       <!-- Modal Profil (code existant inchangé) -->
@@ -498,7 +504,7 @@ import { ClientsTableComponent } from '../../components/clients-table/clients-ta
 export class DashboardComponent implements OnInit {
   currentUser: AuthResponse | null = null;
   showProfileModal = signal(false);
-  activeMenu = signal<'articles' | 'process' | 'clients'>('articles');
+  activeMenu = signal<'articles' | 'process' | 'clients' | 'etat'>('articles');
   activeTab = signal<'info' | 'password'>('info');
   isLoading = signal(false);
   errorMessage = signal('');
