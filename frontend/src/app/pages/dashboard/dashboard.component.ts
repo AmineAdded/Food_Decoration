@@ -1,3 +1,4 @@
+// frontend/src/app/pages/dashboard/dashboard.component.ts (MISE À JOUR)
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,20 +7,35 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
 import { UserService, UpdateProfileRequest, ChangePasswordRequest } from '../../services/user.service';
 import { DashboardNavbarComponent } from '../../components/dashboard-navbar/dashboard-navbar.component';
 import { ArticlesTableComponent } from '../../components/articles-table/articles-table.component';
+import { ClientsTableComponent } from '../../components/clients-table/clients-table.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DashboardNavbarComponent, ArticlesTableComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    DashboardNavbarComponent, 
+    ArticlesTableComponent,
+    ClientsTableComponent
+  ],
   template: `
     <div class="dashboard-container">
-      <app-dashboard-navbar (profileClick)="showProfileModal.set(true)"></app-dashboard-navbar>
+      <app-dashboard-navbar 
+        (profileClick)="showProfileModal.set(true)"
+        (menuChange)="activeMenu.set($event)">
+      </app-dashboard-navbar>
 
       <div class="dashboard-content">
-        <app-articles-table></app-articles-table>
+        <app-articles-table *ngIf="activeMenu() === 'articles'"></app-articles-table>
+        <app-clients-table *ngIf="activeMenu() === 'clients'"></app-clients-table>
+        <!-- Process sera ajouté plus tard -->
+        <div *ngIf="activeMenu() === 'process'" class="coming-soon">
+          <h2>Process - En développement</h2>
+        </div>
       </div>
 
-      <!-- Modal Profil (gardé pour la fonctionnalité existante) -->
+      <!-- Modal Profil (code existant inchangé) -->
       <div class="modal-overlay" *ngIf="showProfileModal()" (click)="closeProfileModal()">
         <div class="modal-content" (click)="$event.stopPropagation()">
           <div class="modal-header">
@@ -212,7 +228,18 @@ import { ArticlesTableComponent } from '../../components/articles-table/articles
       /* Le contenu principal */
     }
 
-    /* Modal styles (gardés de l'ancien dashboard) */
+    .coming-soon {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: #999;
+    }
+
+    .coming-soon h2 {
+      font-size: 2rem;
+      color: #c2185b;
+    }
+
+    /* Modal styles (gardés identiques) */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -471,6 +498,7 @@ import { ArticlesTableComponent } from '../../components/articles-table/articles
 export class DashboardComponent implements OnInit {
   currentUser: AuthResponse | null = null;
   showProfileModal = signal(false);
+  activeMenu = signal<'articles' | 'process' | 'clients'>('articles');
   activeTab = signal<'info' | 'password'>('info');
   isLoading = signal(false);
   errorMessage = signal('');

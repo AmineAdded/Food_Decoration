@@ -1,0 +1,247 @@
+<!-- frontend/src/app/components/clients-table/clients-table.component.html -->
+<div class="clients-container">
+  <div class="table-header">
+    <h2>Gestion des Clients</h2>
+    <div class="header-actions">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Rechercher (Nom, Adresse, Devise...)"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      />
+      <button class="add-btn" (click)="addNewRow()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        Ajouter un client
+      </button>
+    </div>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="errorMessage()" class="error-message">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    {{ errorMessage() }}
+    <button class="close-error" (click)="errorMessage.set('')">×</button>
+  </div>
+
+  <div class="table-wrapper">
+    <div class="client-cards">
+      <div 
+        *ngFor="let client of filteredClients(); let i = index" 
+        class="client-card"
+        [class.editing-card]="isEditing(client)"
+      >
+        <!-- Ligne principale -->
+        <div class="card-main-row">
+          <!-- Nom Complet -->
+          <div class="card-field card-field-wide">
+            <label>Nom Complet</label>
+            <input
+              type="text"
+              [(ngModel)]="client.nomComplet"
+              [disabled]="!isEditing(client)"
+              class="table-input"
+              placeholder="Nom complet du client"
+            />
+          </div>
+
+          <!-- Devise -->
+          <div class="card-field">
+            <label>Devise</label>
+            <select
+              [(ngModel)]="client.devise"
+              [disabled]="!isEditing(client)"
+              class="table-select"
+            >
+              <option value="">Sélectionner</option>
+              <option *ngFor="let devise of deviseOptions" [value]="devise">
+                {{ devise }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Mode de Transport -->
+          <div class="card-field">
+            <label>Mode de Transport</label>
+            <select
+              [(ngModel)]="client.modeTransport"
+              [disabled]="!isEditing(client)"
+              class="table-select"
+            >
+              <option value="">Sélectionner</option>
+              <option *ngFor="let mode of modeTransportOptions" [value]="mode">
+                {{ mode }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Incoterme -->
+          <div class="card-field">
+            <label>Incoterme</label>
+            <select
+              [(ngModel)]="client.incoTerme"
+              [disabled]="!isEditing(client)"
+              class="table-select"
+            >
+              <option value="">Sélectionner</option>
+              <option *ngFor="let inco of incoTermeOptions" [value]="inco">
+                {{ inco }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Ligne des adresses -->
+        <div class="card-address-row">
+          <!-- Adresse de Livraison -->
+          <div class="card-field">
+            <label>Adresse de Livraison</label>
+            <textarea
+              [(ngModel)]="client.adresseLivraison"
+              [disabled]="!isEditing(client)"
+              class="table-textarea"
+              placeholder="Adresse de livraison"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <!-- Adresse de Facturation -->
+          <div class="card-field">
+            <label>Adresse de Facturation</label>
+            <textarea
+              [(ngModel)]="client.adresseFacturation"
+              [disabled]="!isEditing(client)"
+              class="table-textarea"
+              placeholder="Adresse de facturation"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Ligne des notes et actions -->
+        <div class="card-secondary-row">
+          <!-- Notes -->
+          <div class="card-field card-field-notes">
+            <label>Notes</label>
+            <textarea
+              [(ngModel)]="client.notes"
+              [disabled]="!isEditing(client)"
+              class="table-textarea"
+              placeholder="Notes additionnelles"
+              rows="2"
+            ></textarea>
+          </div>
+
+          <!-- Actions -->
+          <div class="card-field card-field-actions">
+            <label>Actions</label>
+            <div class="action-buttons">
+              <button
+                *ngIf="!isEditing(client)"
+                class="edit-btn"
+                (click)="editRow(i)"
+                title="Modifier"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+
+              <button
+                *ngIf="isEditing(client)"
+                class="save-btn"
+                (click)="saveRow(i)"
+                title="Enregistrer"
+                [disabled]="isLoading()"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </button>
+
+              <button
+                *ngIf="isEditing(client)"
+                class="cancel-btn"
+                (click)="cancelEdit(i)"
+                title="Annuler"
+                [disabled]="isLoading()"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+
+              <button 
+                class="delete-btn" 
+                (click)="deleteRow(i)" 
+                title="Supprimer"
+                [disabled]="isLoading()"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path
+                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredClients().length === 0 && clients().length > 0" class="empty-state">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        <p>Aucun résultat trouvé pour cette recherche.</p>
+      </div>
+
+      <div *ngIf="clients().length === 0" class="empty-state">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <p>Aucun client. Cliquez sur "Ajouter un client" pour commencer.</p>
+      </div>
+    </div>
+  </div>
+</div>

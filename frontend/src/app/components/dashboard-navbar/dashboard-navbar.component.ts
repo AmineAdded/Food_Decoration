@@ -1,4 +1,5 @@
-import { Component, OnInit, signal,EventEmitter, Output } from '@angular/core';
+// frontend/src/app/components/dashboard-navbar/dashboard-navbar.component.ts (MIS À JOUR)
+import { Component, OnInit, signal, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService, AuthResponse } from '../../services/auth.service';
@@ -250,7 +251,9 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
 export class DashboardNavbarComponent implements OnInit {
   activeMenu = signal<'articles' | 'process' | 'clients'>('articles');
   currentUser: AuthResponse | null = null;
+  
   @Output() profileClick = new EventEmitter<void>();
+  @Output() menuChange = new EventEmitter<'articles' | 'process' | 'clients'>();
 
   constructor(
     private authService: AuthService,
@@ -265,12 +268,12 @@ export class DashboardNavbarComponent implements OnInit {
 
   setActiveMenu(menu: 'articles' | 'process' | 'clients') {
     this.activeMenu.set(menu);
-    // Émettre un événement ou utiliser un service pour notifier le changement
+    this.menuChange.emit(menu);
   }
 
   openProfile() {
-  this.profileClick.emit(); // 🔥 déclenche l’événement vers le parent
-}
+    this.profileClick.emit();
+  }
 
   logout() {
     this.authService.logout();
