@@ -99,7 +99,7 @@ public class ClientService {
                 .orElseThrow(() -> new RuntimeException("Client non trouvé"));
 
         client.setIsActive(false);
-        clientRepository.save(client);
+        clientRepository.deleteById(id);
         log.info("Client désactivé: {}", client.getNomComplet());
     }
 
