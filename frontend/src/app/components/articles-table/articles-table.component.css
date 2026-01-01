@@ -67,6 +67,7 @@
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
+  overflow-x: auto;
 }
 
 /* Grille d'articles */
@@ -74,6 +75,7 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  min-width: 1800px; /* Force une largeur minimale pour éviter le tassement */
 }
 
 .article-block {
@@ -94,11 +96,12 @@
   background: #E3F2FD;
 }
 
-/* Table principale */
+/* Table principale avec largeurs fixes optimisées */
 .article-main-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;  /*Force les largeurs fixes */
 }
 
 .article-main-table thead {
@@ -121,25 +124,77 @@
 .article-main-table td {
   padding: 0.75rem 1rem;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* Largeurs optimisées pour chaque colonne */
+.article-main-table th:nth-child(1),
+.article-main-table td:nth-child(1) { width: 80px; } /* Ref */
+
+.article-main-table th:nth-child(2),
+.article-main-table td:nth-child(2) { width: 140px; } /* Article */
+
+.article-main-table th:nth-child(3),
+.article-main-table td:nth-child(3) { width: 120px; } /* Famille */
+
+.article-main-table th:nth-child(4),
+.article-main-table td:nth-child(4) { width: 130px; } /* Sous Famille */
+
+.article-main-table th:nth-child(5),
+.article-main-table td:nth-child(5) { width: 160px; } /* Type de Process */
+
+.article-main-table th:nth-child(6),
+.article-main-table td:nth-child(6) { width: 140px; } /* Type de Produit */
+
+.article-main-table th:nth-child(7),
+.article-main-table td:nth-child(7) { width: 110px; } /* Prix Unitaire */
+
+.article-main-table th:nth-child(8),
+.article-main-table td:nth-child(8) { width: 80px; } /* MPQ */
+
+.article-main-table th:nth-child(9),
+.article-main-table td:nth-child(9) { width: 180px; } /* Clients - Plus large */
+
+.article-main-table th:nth-child(10),
+.article-main-table td:nth-child(10) { width: 140px; } /* Date */
+
+/* Cellule Clients avec scroll horizontal si nécessaire */
 .clients-cell {
-  min-width: 180px;
+  max-width: 280px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.clients-cell::-webkit-scrollbar {
+  height: 6px;
+}
+
+.clients-cell::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.clients-cell::-webkit-scrollbar-thumb {
+  background: #9C27B0;
+  border-radius: 3px;
+}
+
+.clients-cell::-webkit-scrollbar-thumb:hover {
+  background: #7B1FA2;
 }
 
 /* Cellule Type de Process */
 .type-process-cell {
-  min-width: 180px;
+  white-space: normal; /* Permet le retour à la ligne si nécessaire */
 }
 
 .type-process-select {
-  min-width: 170px;
   white-space: normal;
 }
 
 /* Cellule Date de création */
 .date-cell {
-  min-width: 140px;
   text-align: center;
 }
 
@@ -169,6 +224,7 @@
   font-size: 0.9rem;
   transition: all 0.3s ease;
   background: white;
+  box-sizing: border-box;
 }
 
 .table-input:focus,
@@ -370,7 +426,17 @@
 }
 
 /* Responsive */
+@media (max-width: 1600px) {
+  .articles-grid {
+    min-width: 1300px;
+  }
+}
+
 @media (max-width: 1400px) {
+  .articles-grid {
+    min-width: 1200px;
+  }
+  
   .article-main-table {
     font-size: 0.85rem;
   }
@@ -429,10 +495,5 @@
 
   .table-wrapper {
     padding: 1rem;
-  }
-
-  .article-main-table {
-    display: block;
-    overflow-x: auto;
   }
 }
