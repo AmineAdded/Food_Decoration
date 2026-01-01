@@ -1,7 +1,9 @@
+// frontend/src/app/services/auth.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap } from 'rxjs';
 import { Router } from '@angular/router';
+import { TokenRefreshService } from './token-refresh.service';
 
 export interface SignupRequest {
   firstname: string;
@@ -40,13 +42,23 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private tokenRefreshService: TokenRefreshService
   ) {
     const storedUser = localStorage.getItem('currentUser');
     this.currentUserSubject = new BehaviorSubject<AuthResponse | null>(
       storedUser ? JSON.parse(storedUser) : null
     );
     this.currentUser = this.currentUserSubject.asObservable();
+
+    // Si un utilisateur est déjà connecté, démarrer le rafraîchissement automatique
+    if (storedUser) {
+      console.log('👤 Utilisateur déjà connecté - Démarrage du rafraîchissement automatique');
+      this.tokenRefreshService.startAutoRefresh();
+      
+      // Vérifier si le token actuel est proche de l'expiration
+      this.tokenRefreshService.checkAndRefreshIfNeeded();
+    }
   }
 
   public get currentUserValue(): AuthResponse | null {
@@ -60,6 +72,10 @@ export class AuthService {
           localStorage.setItem('currentUser', JSON.stringify(response));
           localStorage.setItem('token', response.token);
           this.currentUserSubject.next(response);
+          
+          // Démarrer le rafraîchissement automatique après inscription
+          console.log('✅ Inscription réussie - Démarrage du rafraîchissement automatique');
+          this.tokenRefreshService.startAutoRefresh();
         })
       );
   }
@@ -71,11 +87,19 @@ export class AuthService {
           localStorage.setItem('currentUser', JSON.stringify(response));
           localStorage.setItem('token', response.token);
           this.currentUserSubject.next(response);
+          
+          // Démarrer le rafraîchissement automatique après connexion
+          console.log('✅ Connexion réussie - Démarrage du rafraîchissement automatique');
+          this.tokenRefreshService.startAutoRefresh();
         })
       );
   }
 
   logout(): void {
+    // Arrêter le rafraîchissement automatique
+    console.log('👋 Déconnexion - Arrêt du rafraîchissement automatique');
+    this.tokenRefreshService.stopAutoRefresh();
+    
     localStorage.removeItem('currentUser');
     localStorage.removeItem('token');
     this.currentUserSubject.next(null);
@@ -88,5 +112,12 @@ export class AuthService {
 
   getToken(): string | null {
     return localStorage.getItem('token');
+  }
+
+  /**
+   * Rafraîchit manuellement le token
+   */
+  refreshToken(): Observable<AuthResponse | null> {
+    return this.tokenRefreshService.refreshToken();
   }
 }

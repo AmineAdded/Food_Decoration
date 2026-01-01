@@ -76,4 +76,22 @@ public class AuthService {
                 .phone(user.getPhone())
                 .build();
     }
+    // NOUVEAU: Méthode pour rafraîchir le token
+    public AuthResponse refreshToken(String email) {
+        // Récupérer l'utilisateur
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        // Générer un nouveau token JWT
+        var jwtToken = jwtService.generateToken(user);
+
+        return AuthResponse.builder()
+                .token(jwtToken)
+                .id(user.getId())
+                .email(user.getEmail())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .phone(user.getPhone())
+                .build();
+    }
 }
