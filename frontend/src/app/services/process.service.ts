@@ -4,18 +4,18 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface CreateProcessRequest {
-  ref: string;
+  ref: string | null;
   nom: string;
 }
 
 export interface UpdateProcessRequest {
-  ref: string;
+  ref: string | null;
   nom: string;
 }
 
 export interface ProcessResponse {
   id: number;
-  ref: string;
+  ref: string | null;
   nom: string;
   isActive: boolean;
   createdAt: string;

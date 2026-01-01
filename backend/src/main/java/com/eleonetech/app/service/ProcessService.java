@@ -25,7 +25,13 @@ public class ProcessService {
 
     @Transactional
     public ProcessResponse createProcess(CreateProcessRequest request) {
-        if (processRepository.existsByRef(request.getRef())) {
+        // ✅ Convertir chaîne vide en NULL
+        String ref = (request.getRef() == null || request.getRef().trim().isEmpty())
+                ? null
+                : request.getRef().trim();
+
+        // Vérifier unicité seulement si ref n'est pas null
+        if (ref != null && processRepository.existsByRef(ref)) {
             throw new RuntimeException("Un process avec cette référence existe déjà");
         }
 
@@ -34,7 +40,7 @@ public class ProcessService {
         }
 
         Process process = Process.builder()
-                .ref(request.getRef())
+                .ref(ref)  // ✅ NULL au lieu de ""
                 .nom(request.getNom())
                 .isActive(true)
                 .build();
@@ -73,19 +79,28 @@ public class ProcessService {
         Process process = processRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Process non trouvé"));
 
-        if (request.getRef() != null && !process.getRef().equals(request.getRef()) &&
-                processRepository.existsByRef(request.getRef())) {
-            throw new RuntimeException("Un process avec cette référence existe déjà");
+        // ✅ Convertir chaîne vide en NULL
+        String newRef = (request.getRef() == null || request.getRef().trim().isEmpty())
+                ? null
+                : request.getRef().trim();
+
+        // Vérifier unicité seulement si ref n'est pas null ET a changé
+        if (newRef != null) {
+            boolean refChanged = (process.getRef() == null || !process.getRef().equals(newRef));
+            if (refChanged && processRepository.existsByRef(newRef)) {
+                throw new RuntimeException("Un process avec cette référence existe déjà");
+            }
         }
 
+        // Vérifier le nom
         if (request.getNom() != null && !process.getNom().equals(request.getNom()) &&
                 processRepository.existsByNom(request.getNom())) {
             throw new RuntimeException("Un process avec ce nom existe déjà");
         }
 
-        if (request.getRef() != null) {
-            process.setRef(request.getRef());
-        }
+        // ✅ Mise à jour avec NULL si vide
+        process.setRef(newRef);
+
         if (request.getNom() != null) {
             process.setNom(request.getNom());
         }
@@ -95,7 +110,6 @@ public class ProcessService {
 
         return mapToResponse(process);
     }
-
     @Transactional
     public void deleteProcess(Long id) {
         Process process = processRepository.findById(id)

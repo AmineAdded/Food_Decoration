@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UpdateProcessRequest {
-    @NotBlank(message = "La référence du process est obligatoire")
     private String ref;
 
     @NotBlank(message = "Le nom du process est obligatoire")

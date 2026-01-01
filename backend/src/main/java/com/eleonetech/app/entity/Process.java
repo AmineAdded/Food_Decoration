@@ -21,8 +21,7 @@ public class Process {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "La référence du process est obligatoire")
-    @Column(name = "ref", nullable = false, unique = true, length = 50)
+    @Column(name = "ref", unique = true, length = 50)
     private String ref;
 
     @NotBlank(message = "Le nom du process est obligatoire")

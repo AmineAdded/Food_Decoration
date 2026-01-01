@@ -95,8 +95,14 @@ public class ArticleService {
     }
 
     public List<ArticleResponse> getAllArticles() {
-        return articleRepository.findAllActiveWithRelations()
-                .stream()
+        // ✅ Charger en deux étapes
+        List<Article> articles = articleRepository.findAllActiveWithClients();
+
+        if (!articles.isEmpty()) {
+            articleRepository.findArticlesWithProcesses(articles);
+        }
+
+        return articles.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
