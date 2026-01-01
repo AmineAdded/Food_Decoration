@@ -25,18 +25,24 @@ public class ClientService {
 
     @Transactional
     public ClientResponse createClient(CreateClientRequest request) {
-        // Vérifier si la référence existe déjà
-        if (clientRepository.existsByRef(request.getRef())) {
+
+        // ✅ Convertir chaîne vide en NULL
+        String ref = (request.getRef() == null || request.getRef().trim().isEmpty())
+                ? null
+                : request.getRef().trim();
+
+        // ✅ Vérifier unicité seulement si ref n'est pas null
+        if (ref != null && clientRepository.existsByRef(ref)) {
             throw new RuntimeException("Un client avec cette référence existe déjà");
         }
 
-        // Vérifier si le nom existe déjà
+        // Vérifier unicité du nom
         if (clientRepository.existsByNomComplet(request.getNomComplet())) {
             throw new RuntimeException("Un client avec ce nom existe déjà");
         }
 
         Client client = Client.builder()
-                .ref(request.getRef())
+                .ref(ref) // ✅ NULL au lieu de ""
                 .nomComplet(request.getNomComplet())
                 .adresseLivraison(request.getAdresseLivraison())
                 .adresseFacturation(request.getAdresseFacturation())
@@ -51,6 +57,7 @@ public class ClientService {
 
         return mapToResponse(client);
     }
+
 
     public List<ClientResponse> getAllClients() {
         return clientRepository.findAllActiveOrderByRef()
@@ -77,25 +84,33 @@ public class ClientService {
 
     @Transactional
     public ClientResponse updateClient(Long id, UpdateClientRequest request) {
+
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client non trouvé"));
 
-        // Vérifier si la nouvelle référence existe déjà (sauf si c'est le même client)
-        if (request.getRef() != null && !client.getRef().equals(request.getRef()) &&
-                clientRepository.existsByRef(request.getRef())) {
-            throw new RuntimeException("Un client avec cette référence existe déjà");
+        // ✅ Convertir chaîne vide en NULL
+        String newRef = (request.getRef() == null || request.getRef().trim().isEmpty())
+                ? null
+                : request.getRef().trim();
+
+        // ✅ Vérifier unicité seulement si ref a changé et n'est pas null
+        if (newRef != null) {
+            boolean refChanged = (client.getRef() == null || !client.getRef().equals(newRef));
+            if (refChanged && clientRepository.existsByRef(newRef)) {
+                throw new RuntimeException("Un client avec cette référence existe déjà");
+            }
         }
 
-        // Vérifier si le nouveau nom existe déjà (sauf si c'est le même client)
-        if (request.getNomComplet() != null && !client.getNomComplet().equals(request.getNomComplet()) &&
+        // Vérifier unicité du nom
+        if (request.getNomComplet() != null &&
+                !client.getNomComplet().equals(request.getNomComplet()) &&
                 clientRepository.existsByNomComplet(request.getNomComplet())) {
             throw new RuntimeException("Un client avec ce nom existe déjà");
         }
 
-        // Mettre à jour uniquement si les valeurs ne sont pas nulles
-        if (request.getRef() != null) {
-            client.setRef(request.getRef());
-        }
+        // ✅ Mise à jour
+        client.setRef(newRef);
+
         if (request.getNomComplet() != null) {
             client.setNomComplet(request.getNomComplet());
         }
@@ -120,6 +135,7 @@ public class ClientService {
 
         return mapToResponse(client);
     }
+
 
     @Transactional
     public void deleteClient(Long id) {

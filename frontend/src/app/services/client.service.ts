@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface CreateClientRequest {
-  ref: string;
+  ref: string | null;
   nomComplet: string;
   adresseLivraison?: string;
   adresseFacturation?: string;
@@ -14,7 +14,7 @@ export interface CreateClientRequest {
 }
 
 export interface UpdateClientRequest {
-  ref: string;
+  ref: string | null;
   nomComplet: string;
   adresseLivraison?: string;
   adresseFacturation?: string;
@@ -25,7 +25,7 @@ export interface UpdateClientRequest {
 
 export interface ClientResponse {
   id: number;
-  ref: string;
+  ref: string | null;
   nomComplet: string;
   adresseLivraison?: string;
   adresseFacturation?: string;
