@@ -33,7 +33,7 @@ export class ClientsTableComponent implements OnInit {
 
   deviseOptions = ['USD', 'EUR', 'TND'];
   modeTransportOptions = ['Terrestre', 'Aérien', 'Maritime'];
-  incoTermeOptions = ['EXW', 'EDDU', 'DAP', 'DDP', 'FSA'];
+  incoTermeOptions = ['EXW', 'DDU', 'DAP', 'DDP', 'FCA'];
 
   private originalClients: { [key: number]: ClientTable } = {};
   private editingClients: Set<number> = new Set();
