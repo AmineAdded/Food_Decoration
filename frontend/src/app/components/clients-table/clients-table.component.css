@@ -104,25 +104,48 @@
 .clients-grid {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0;
+}
+
+/* ✅ HEADER FIXE */
+.clients-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0;
+}
+
+.clients-header .client-main-table {
+  margin-bottom: 0;
+}
+
+.clients-header thead {
+  background: linear-gradient(135deg, #E91E63, #F06292);
 }
 
 .client-block {
   background: white;
-  border: 3px solid #E0E0E0;
-  border-radius: 12px;
+  border: none;
+  border-bottom: 2px solid #E0E0E0;
+  border-radius: 0;
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
+.client-block:first-child {
+  border-top: 2px solid #E0E0E0;
+}
+
 .client-block:hover {
-  border-color: #E91E63;
-  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.15);
+  background: #FAFAFA;
+  border-bottom: 2px solid #E91E63;
 }
 
 .client-block.editing-block {
-  border-color: #2196F3;
   background: #E3F2FD;
+  border-bottom: 2px solid #2196F3;
 }
 
 /* Table principale */
@@ -130,6 +153,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  table-layout: fixed;
 }
 
 .client-main-table thead {
@@ -144,6 +168,31 @@
   white-space: nowrap;
   font-size: 0.85rem;
 }
+
+/* ✅ Largeurs des colonnes */
+.client-main-table th:nth-child(1),
+.client-main-table td:nth-child(1) { width: 120px; }
+
+.client-main-table th:nth-child(2),
+.client-main-table td:nth-child(2) { width: 200px; }
+
+.client-main-table th:nth-child(3),
+.client-main-table td:nth-child(3) { width: 100px; }
+
+.client-main-table th:nth-child(4),
+.client-main-table td:nth-child(4) { width: 150px; }
+
+.client-main-table th:nth-child(5),
+.client-main-table td:nth-child(5) { width: 120px; }
+
+.client-main-table th:nth-child(6),
+.client-main-table td:nth-child(6) { width: 200px; }
+
+.client-main-table th:nth-child(7),
+.client-main-table td:nth-child(7) { width: 200px; }
+
+.client-main-table th:nth-child(8),
+.client-main-table td:nth-child(8) { width: 180px; }
 
 .client-main-table tbody tr {
   background: white;

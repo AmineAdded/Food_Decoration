@@ -35,12 +35,8 @@
   <div class="table-wrapper">
     <!-- Clients en grille -->
     <div class="clients-grid">
-      <div
-        *ngFor="let client of filteredClients(); let i = index"
-        class="client-block"
-        [class.editing-block]="isEditing(client)"
-      >
-        <!-- En-tête des colonnes principales -->
+      <!-- ✅ HEADER FIXE - N'apparaît qu'une seule fois -->
+      <div class="clients-header" *ngIf="filteredClients().length > 0">
         <table class="client-main-table">
           <thead>
             <tr>
@@ -54,6 +50,16 @@
               <th>Actions</th>
             </tr>
           </thead>
+        </table>
+      </div>
+
+      <!-- ✅ LIGNES DE DONNÉES - Sans thead répété -->
+      <div
+        *ngFor="let client of filteredClients(); let i = index"
+        class="client-block"
+        [class.editing-block]="isEditing(client)"
+      >
+        <table class="client-main-table">
           <tbody>
             <tr>
               <!-- Ref -->

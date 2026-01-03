@@ -35,11 +35,8 @@
   <div class="table-wrapper">
     <!-- Process en grille -->
     <div class="process-grid">
-      <div
-        *ngFor="let proc of filteredProcess(); let i = index"
-        class="process-block"
-        [class.editing-block]="isEditing(proc)"
-      >
+      <!-- ✅ HEADER FIXE - N'apparaît qu'une seule fois -->
+      <div class="process-header" *ngIf="filteredProcess().length > 0">
         <table class="process-main-table">
           <thead>
             <tr>
@@ -48,6 +45,16 @@
               <th>Actions</th>
             </tr>
           </thead>
+        </table>
+      </div>
+
+      <!-- ✅ LIGNES DE DONNÉES - Sans thead répété -->
+      <div
+        *ngFor="let proc of filteredProcess(); let i = index"
+        class="process-block"
+        [class.editing-block]="isEditing(proc)"
+      >
+        <table class="process-main-table">
           <tbody>
             <tr>
               <!-- Ref -->
