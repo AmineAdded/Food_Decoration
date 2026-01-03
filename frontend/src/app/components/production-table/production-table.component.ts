@@ -362,4 +362,33 @@ export class ProductionTableComponent implements OnInit {
     const article = this.availableArticles().find(a => a.ref === ref);
     return article ? article.nom : '';
   }
+
+  // ✅ Export Excel
+  exportToExcel() {
+    this.isLoading.set(true);
+    
+    const articleRef = this.searchArticleRef() || undefined;
+    const date = this.searchDate() || undefined;
+    
+    this.productionService.exportToExcel(articleRef, date).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const today = new Date().toISOString().split('T')[0];
+        link.download = `productions_${today}.xlsx`;
+        
+        link.click();
+        window.URL.revokeObjectURL(url);
+        
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Erreur lors de l\'export:', error);
+        this.errorMessage.set('Erreur lors de l\'export Excel');
+        this.isLoading.set(false);
+      }
+    });
+  }
 }

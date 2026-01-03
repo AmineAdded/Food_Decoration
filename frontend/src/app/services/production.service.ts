@@ -78,4 +78,14 @@ export class ProductionService {
   deleteProduction(id: number): Observable<MessageResponse> {
     return this.http.delete<MessageResponse>(`${this.apiUrl}/${id}`);
   }
+
+  exportToExcel(articleRef?: string, date?: string): Observable<Blob> {
+    let params = '';
+    if (articleRef) params += `?articleRef=${articleRef}`;
+    if (date) params += (params ? '&' : '?') + `date=${date}`;
+    
+    return this.http.get(`${this.apiUrl}/export/excel${params}`, {
+      responseType: 'blob'
+    });
+  }
 }

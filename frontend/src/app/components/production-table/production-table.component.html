@@ -10,6 +10,14 @@
         [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)"
       />
+      <button class="export-btn" (click)="exportToExcel()" [disabled]="isLoading()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Exporter Excel
+      </button>
       <button class="add-btn" (click)="addNewRow()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="10" />
@@ -108,11 +116,8 @@
   <div class="table-wrapper">
     <!-- Productions en grille -->
     <div class="production-grid">
-      <div
-        *ngFor="let prod of filteredProductions(); let i = index"
-        class="production-block"
-        [class.editing-block]="isEditing(prod)"
-      >
+      <!-- ✅ HEADER FIXE - N'apparaît qu'une seule fois -->
+      <div class="production-header" *ngIf="filteredProductions().length > 0">
         <table class="production-main-table">
           <thead>
             <tr>
@@ -124,6 +129,16 @@
               <th>Actions</th>
             </tr>
           </thead>
+        </table>
+      </div>
+
+      <!-- ✅ LIGNES DE DONNÉES - Sans thead répété -->
+      <div
+        *ngFor="let prod of filteredProductions(); let i = index"
+        class="production-block"
+        [class.editing-block]="isEditing(prod)"
+      >
+        <table class="production-main-table">
           <tbody>
             <tr>
               <!-- Ref Article -->

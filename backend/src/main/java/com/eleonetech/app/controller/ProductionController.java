@@ -2,6 +2,7 @@
 package com.eleonetech.app.controller;
 
 import com.eleonetech.app.dto.*;
+import com.eleonetech.app.service.ExcelExportService;
 import com.eleonetech.app.service.ProductionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/production")
@@ -19,6 +23,7 @@ import java.util.List;
 public class ProductionController {
 
     private final ProductionService productionService;
+    private final ExcelExportService excelExportService;
 
     @PostMapping
     public ResponseEntity<?> createProduction(@Valid @RequestBody CreateProductionRequest request) {
@@ -110,6 +115,38 @@ public class ProductionController {
             log.error("Erreur lors de la suppression de la production: ", e);
             return ResponseEntity.badRequest()
                     .body(new MessageResponse(e.getMessage()));
+        }
+    }
+    @GetMapping("/export/excel")
+    public ResponseEntity<byte[]> exportToExcel(@RequestParam(required = false) String articleRef,
+                                                @RequestParam(required = false) String date) {
+        try {
+            List<ProductionResponse> productions;
+
+            if (articleRef != null && date != null) {
+                productions = productionService.searchByArticleRefAndDate(articleRef, date);
+            } else if (articleRef != null) {
+                productions = productionService.searchByArticleRef(articleRef);
+            } else if (date != null) {
+                productions = productionService.searchByDate(date);
+            } else {
+                productions = productionService.getAllProductions();
+            }
+
+            byte[] excelFile = excelExportService.exportProductionsToExcel(productions);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment",
+                    "productions_" + LocalDate.now() + ".xlsx");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelFile);
+
+        } catch (Exception e) {
+            log.error("Erreur lors de l'export Excel: ", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 }
