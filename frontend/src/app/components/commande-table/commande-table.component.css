@@ -23,6 +23,7 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
 .commande-container {
   padding: 2rem;
   background: #f8f9fa;
@@ -329,6 +330,32 @@
   font-weight: 600;
   white-space: nowrap;
   font-size: 0.85rem;
+  position: relative;
+}
+
+/* ✅ STYLES DES BOUTONS DE TRI */
+.sort-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.25rem;
+  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  opacity: 0.7;
+  vertical-align: middle;
+}
+
+.sort-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.sort-btn svg {
+  stroke-width: 2;
 }
 
 /* ✅ Largeurs des colonnes */

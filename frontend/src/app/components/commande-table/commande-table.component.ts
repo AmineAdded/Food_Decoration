@@ -19,6 +19,8 @@ interface CommandeTable extends CommandeResponse {
 
 type DateType = 'souhaitee' | 'ajout';
 type SearchMode = 'date' | 'periode';
+type SortColumn = 'dateSouhaitee' | 'dateAjout' | null;
+type SortOrder = 'asc' | 'desc' | null;
 
 @Component({
   selector: 'app-commande-table',
@@ -39,14 +41,15 @@ export class CommandeTableComponent implements OnInit {
   searchTypeDate = signal<DateType>('souhaitee');
   searchMode = signal<SearchMode>('date');
   
-  // Pour date unique
   searchDate = signal('');
-  
-  // Pour période
   searchDateDebut = signal('');
   searchDateFin = signal('');
   
   summary = signal<CommandeSummaryResponse | null>(null);
+  
+  // ✅ NOUVEAU: États du tri
+  sortColumn = signal<SortColumn>(null);
+  sortOrder = signal<SortOrder>(null);
   
   isLoading = signal(false);
   errorMessage = signal('');
@@ -114,6 +117,29 @@ export class CommandeTableComponent implements OnInit {
     });
   }
 
+  // ✅ NOUVEAU: Fonction de tri
+  toggleSort(column: 'dateSouhaitee' | 'dateAjout') {
+    const currentColumn = this.sortColumn();
+    const currentOrder = this.sortOrder();
+    
+    if (currentColumn !== column) {
+      // Nouvelle colonne sélectionnée: tri descendant
+      this.sortColumn.set(column);
+      this.sortOrder.set('desc');
+    } else {
+      // Même colonne: changer l'ordre
+      if (currentOrder === 'desc') {
+        this.sortOrder.set('asc');
+      } else if (currentOrder === 'asc') {
+        this.sortColumn.set(null);
+        this.sortOrder.set(null);
+      } else {
+        this.sortOrder.set('desc');
+      }
+    }
+  }
+
+  // ✅ MODIFIÉ: Recherche avec tri
   filteredCommandes = computed(() => {
     let filtered = this.commandes();
     const term = this.searchTerm().toLowerCase();
@@ -127,16 +153,27 @@ export class CommandeTableComponent implements OnInit {
       );
     }
 
+    // ✅ NOUVEAU: Appliquer le tri
+    const column = this.sortColumn();
+    const order = this.sortOrder();
+    
+    if (column && order) {
+      filtered = [...filtered].sort((a, b) => {
+        const dateA = new Date(a[column]).getTime();
+        const dateB = new Date(b[column]).getTime();
+        
+        return order === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    }
+
     return filtered;
   });
 
-  // ✅ Recherche intelligente selon les critères
   performSearch() {
     const articleRef = this.searchArticleRef();
     const mode = this.searchMode();
     const typeDate = this.searchTypeDate();
     
-    // Pas de filtre => toutes les commandes
     if (!articleRef && !this.hasDateFilter()) {
       this.loadCommandes();
       return;
@@ -144,7 +181,6 @@ export class CommandeTableComponent implements OnInit {
 
     this.isLoading.set(true);
 
-    // Cas 1: Ref + Période
     if (articleRef && mode === 'periode' && this.searchDateDebut() && this.searchDateFin()) {
       const searchObservable = typeDate === 'souhaitee'
         ? this.commandeService.searchByArticleRefAndPeriodeSouhaitee(
@@ -163,7 +199,6 @@ export class CommandeTableComponent implements OnInit {
       return;
     }
 
-    // Cas 2: Ref + Date unique
     if (articleRef && mode === 'date' && this.searchDate()) {
       const searchObservable = typeDate === 'souhaitee'
         ? this.commandeService.searchByArticleRefAndDateSouhaitee(articleRef, this.searchDate())
@@ -180,7 +215,6 @@ export class CommandeTableComponent implements OnInit {
       return;
     }
 
-    // Cas 3: Seulement Ref => affiche le sommaire
     if (articleRef && !this.hasDateFilter()) {
       this.commandeService.searchByArticleRef(articleRef).subscribe({
         next: (commandes) => {
@@ -193,7 +227,6 @@ export class CommandeTableComponent implements OnInit {
       return;
     }
 
-    // Cas 4: Seulement Date (pas de sommaire)
     if (!articleRef && mode === 'date' && this.searchDate()) {
       const searchObservable = typeDate === 'souhaitee'
         ? this.commandeService.searchByDateSouhaitee(this.searchDate())
@@ -202,7 +235,7 @@ export class CommandeTableComponent implements OnInit {
       searchObservable.subscribe({
         next: (commandes) => {
           this.updateCommandes(commandes);
-          this.summary.set(null); // Pas de sommaire
+          this.summary.set(null);
           this.isLoading.set(false);
         },
         error: (error) => this.handleSearchError(error)
@@ -210,11 +243,9 @@ export class CommandeTableComponent implements OnInit {
       return;
     }
 
-    // Fallback
     this.loadCommandes();
   }
 
-  // Helper: vérifie si un filtre de date est actif
   hasDateFilter(): boolean {
     if (this.searchMode() === 'date') {
       return !!this.searchDate();
@@ -223,19 +254,16 @@ export class CommandeTableComponent implements OnInit {
     }
   }
 
-  // ✅ Charge le sommaire selon les filtres actifs
   loadSummary() {
     const articleRef = this.searchArticleRef();
     const mode = this.searchMode();
     const typeDate = this.searchTypeDate();
 
-    // Pas de sommaire si pas d'article sélectionné
     if (!articleRef) {
       this.summary.set(null);
       return;
     }
 
-    // Période
     if (mode === 'periode' && this.searchDateDebut() && this.searchDateFin()) {
       const summaryObservable = typeDate === 'souhaitee'
         ? this.commandeService.getSummaryByArticleRefAndPeriodeSouhaitee(
@@ -250,7 +278,6 @@ export class CommandeTableComponent implements OnInit {
       return;
     }
 
-    // Date unique
     if (mode === 'date' && this.searchDate()) {
       const summaryObservable = typeDate === 'souhaitee'
         ? this.commandeService.getSummaryByArticleRefAndDateSouhaitee(articleRef, this.searchDate())
@@ -263,7 +290,6 @@ export class CommandeTableComponent implements OnInit {
       return;
     }
 
-    // Article seul
     this.commandeService.getSummaryByArticleRef(articleRef).subscribe({
       next: (summary) => this.summary.set(summary),
       error: (error) => console.error('Erreur sommaire:', error)
@@ -285,7 +311,6 @@ export class CommandeTableComponent implements OnInit {
     this.isLoading.set(false);
   }
 
-  // ✅ Réinitialiser tous les filtres
   resetFilters() {
     this.searchTerm.set('');
     this.searchArticleRef.set('');
@@ -295,6 +320,8 @@ export class CommandeTableComponent implements OnInit {
     this.searchDateFin.set('');
     this.searchMode.set('date');
     this.searchTypeDate.set('souhaitee');
+    this.sortColumn.set(null); // ✅ Réinitialiser le tri
+    this.sortOrder.set(null);
     this.summary.set(null);
     this.loadCommandes();
   }
@@ -317,7 +344,6 @@ export class CommandeTableComponent implements OnInit {
     });
   }
 
-  // ✅ Export Excel
   exportToExcel() {
     this.isLoading.set(true);
     

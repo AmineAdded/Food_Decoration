@@ -116,7 +116,7 @@
   <div class="table-wrapper">
     <!-- Productions en grille -->
     <div class="production-grid">
-      <!-- ✅ HEADER FIXE - N'apparaît qu'une seule fois -->
+      <!-- ✅ HEADER FIXE -->
       <div class="production-header" *ngIf="filteredProductions().length > 0">
         <table class="production-main-table">
           <thead>
@@ -124,7 +124,23 @@
               <th>Ref Article</th>
               <th>Article</th>
               <th>Quantité</th>
-              <th>Date de Production</th>
+              <th>
+                Date de Production
+                <button class="sort-btn" (click)="toggleSort()" title="Trier par date">
+                  <svg *ngIf="sortOrder() === null" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <polyline points="19 12 12 19 5 12"/>
+                  </svg>
+                  <svg *ngIf="sortOrder() === 'desc'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="19" x2="12" y2="5"/>
+                    <polyline points="5 12 12 5 19 12"/>
+                  </svg>
+                  <svg *ngIf="sortOrder() === 'asc'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <polyline points="19 12 12 19 5 12"/>
+                  </svg>
+                </button>
+              </th>
               <th>Stock Actuel</th>
               <th>Actions</th>
             </tr>
@@ -132,7 +148,7 @@
         </table>
       </div>
 
-      <!-- ✅ LIGNES DE DONNÉES - Sans thead répété -->
+      <!-- ✅ LIGNES DE DONNÉES -->
       <div
         *ngFor="let prod of filteredProductions(); let i = index"
         class="production-block"

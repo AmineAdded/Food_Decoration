@@ -174,8 +174,40 @@
               <th>Article</th>
               <th>Client</th>
               <th>Quantité</th>
-              <th>Date Souhaitée</th>
-              <th>Date de création</th>
+              <th>
+                Date Souhaitée
+                <button class="sort-btn" (click)="toggleSort('dateSouhaitee')" title="Trier par date souhaitée">
+                  <svg *ngIf="sortColumn() !== 'dateSouhaitee' || sortOrder() === null" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <polyline points="19 12 12 19 5 12"/>
+                  </svg>
+                  <svg *ngIf="sortColumn() === 'dateSouhaitee' && sortOrder() === 'desc'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="19" x2="12" y2="5"/>
+                    <polyline points="5 12 12 5 19 12"/>
+                  </svg>
+                  <svg *ngIf="sortColumn() === 'dateSouhaitee' && sortOrder() === 'asc'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <polyline points="19 12 12 19 5 12"/>
+                  </svg>
+                </button>
+              </th>
+              <th>
+                Date de création
+                <button class="sort-btn" (click)="toggleSort('dateAjout')" title="Trier par date de création">
+                  <svg *ngIf="sortColumn() !== 'dateAjout' || sortOrder() === null" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <polyline points="19 12 12 19 5 12"/>
+                  </svg>
+                  <svg *ngIf="sortColumn() === 'dateAjout' && sortOrder() === 'desc'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="19" x2="12" y2="5"/>
+                    <polyline points="5 12 12 5 19 12"/>
+                  </svg>
+                  <svg *ngIf="sortColumn() === 'dateAjout' && sortOrder() === 'asc'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <polyline points="19 12 12 19 5 12"/>
+                  </svg>
+                </button>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>

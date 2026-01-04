@@ -15,6 +15,8 @@ interface ProductionTable extends ProductionResponse {
   isNew?: boolean;
 }
 
+type SortOrder = 'asc' | 'desc' | null;
+
 @Component({
   selector: 'app-production-table',
   standalone: true,
@@ -32,6 +34,9 @@ export class ProductionTableComponent implements OnInit {
   searchDate = signal('');
   searchYear = signal<number | null>(null);
   searchMonth = signal<number | null>(null);
+  
+  // ✅ NOUVEAU: État du tri
+  sortOrder = signal<SortOrder>(null);
   
   isLoading = signal(false);
   errorMessage = signal('');
@@ -84,7 +89,20 @@ export class ProductionTableComponent implements OnInit {
     });
   }
 
-  // ✅ Recherche avec filtres multiples
+  // ✅ NOUVEAU: Fonction de tri
+  toggleSort() {
+    const currentOrder = this.sortOrder();
+    
+    if (currentOrder === null) {
+      this.sortOrder.set('desc'); // Premier clic: descendant (plus récent d'abord)
+    } else if (currentOrder === 'desc') {
+      this.sortOrder.set('asc'); // Deuxième clic: ascendant (plus ancien d'abord)
+    } else {
+      this.sortOrder.set(null); // Troisième clic: retour à l'ordre par défaut
+    }
+  }
+
+  // ✅ MODIFIÉ: Recherche avec tri
   filteredProductions = computed(() => {
     let filtered = this.productions();
     const term = this.searchTerm().toLowerCase();
@@ -128,10 +146,20 @@ export class ProductionTableComponent implements OnInit {
       });
     }
 
+    // ✅ NOUVEAU: Appliquer le tri
+    const order = this.sortOrder();
+    if (order !== null) {
+      filtered = [...filtered].sort((a, b) => {
+        const dateA = new Date(a.dateProduction).getTime();
+        const dateB = new Date(b.dateProduction).getTime();
+        
+        return order === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    }
+
     return filtered;
   });
 
-  // ✅ Recherche par article
   searchByArticle() {
     const ref = this.searchArticleRef();
     if (!ref) {
@@ -158,7 +186,6 @@ export class ProductionTableComponent implements OnInit {
     });
   }
 
-  // ✅ Recherche par date
   searchByDateFilter() {
     const date = this.searchDate();
     if (!date) {
@@ -185,13 +212,13 @@ export class ProductionTableComponent implements OnInit {
     });
   }
 
-  // ✅ Réinitialiser les filtres
   resetFilters() {
     this.searchTerm.set('');
     this.searchArticleRef.set('');
     this.searchDate.set('');
     this.searchYear.set(null);
     this.searchMonth.set(null);
+    this.sortOrder.set(null); // ✅ Réinitialiser le tri
     this.loadProductions();
   }
 
@@ -347,7 +374,6 @@ export class ProductionTableComponent implements OnInit {
     return prod.isEditing === true;
   }
 
-  // ✅ Formater la date pour l'affichage
   formatDate(dateString: string): string {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -357,13 +383,11 @@ export class ProductionTableComponent implements OnInit {
     return `${day}/${month}/${year}`;
   }
 
-  // ✅ Obtenir le nom de l'article depuis la ref
   getArticleNomFromRef(ref: string): string {
     const article = this.availableArticles().find(a => a.ref === ref);
     return article ? article.nom : '';
   }
 
-  // ✅ Export Excel
   exportToExcel() {
     this.isLoading.set(true);
     
