@@ -363,16 +363,16 @@
 .commande-main-table td:nth-child(1) { width: 120px; }
 
 .commande-main-table th:nth-child(2),
-.commande-main-table td:nth-child(2) { width: 200px; }
+.commande-main-table td:nth-child(2) { width: 250px; }
 
 .commande-main-table th:nth-child(3),
 .commande-main-table td:nth-child(3) { width: 200px; } /* N° Commande */
 
 .commande-main-table th:nth-child(4),
-.commande-main-table td:nth-child(4) { width: 240px; }
+.commande-main-table td:nth-child(4) { width: 390px; }
 
 .commande-main-table th:nth-child(5),
-.commande-main-table td:nth-child(5) { width: 150px; }
+.commande-main-table td:nth-child(5) { width: 200px; }
 
 .commande-main-table th:nth-child(6),
 .commande-main-table td:nth-child(6) { width: 120px; } /* Type */
