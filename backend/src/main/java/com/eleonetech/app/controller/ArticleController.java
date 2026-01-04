@@ -45,12 +45,17 @@ public class ArticleController {
             @PathVariable Long id,
             @RequestParam("image") MultipartFile file) {
         try {
+            log.info("📤 Upload image pour article ID: {}", id);
+            log.info("📄 Nom fichier: {}, Taille: {} bytes", file.getOriginalFilename(), file.getSize());
+
             ArticleResponse response = articleService.updateArticleImage(id, file);
+
+            log.info("✅ Image uploadée avec succès: {}", response.getImageFilename());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Erreur lors de l'upload de l'image: ", e);
+            log.error("❌ Erreur lors de l'upload de l'image: ", e);
             return ResponseEntity.badRequest()
-                    .body(new MessageResponse(e.getMessage()));
+                    .body(new MessageResponse("Erreur: " + e.getMessage()));
         }
     }
 

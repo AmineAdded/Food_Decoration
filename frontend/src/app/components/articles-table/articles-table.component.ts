@@ -245,119 +245,134 @@ export class ArticlesTableComponent implements OnInit {
   }
 
   saveRow(index: number) {
-    const article = this.filteredArticles()[index];
-    const realIndex = this.articles().findIndex(a => a.id === article.id);
+  const article = this.filteredArticles()[index];
+  const realIndex = this.articles().findIndex(a => a.id === article.id);
 
-    if (!article.ref?.trim()) {
-      this.errorMessage.set('La référence est obligatoire');
-      return;
-    }
-
-    if (!article.article?.trim()) {
-      this.errorMessage.set('Le nom de l\'article est obligatoire');
-      return;
-    }
-
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-
-    if (article.isNew) {
-      const request: CreateArticleRequest = {
-        ref: article.ref,
-        article: article.article,
-        famille: article.famille || '',
-        sousFamille: article.sousFamille || '',
-        typeProcess: article.typeProcess || '',
-        typeProduit: article.typeProduit || '',
-        prixUnitaire: article.prixUnitaire || 0,
-        mpq: article.mpq || 0,
-        stock: article.stock || 0,
-        clients: article.clients || [],
-        processes: article.processes || []
-      };
-
-      this.articleService.createArticle(request).subscribe({
-        next: (response) => {
-          // ✅ Upload de l'image si présente
-          if (article.imageFile) {
-            this.articleService.uploadImage(response.id, article.imageFile).subscribe({
-              next: () => {
-                this.loadArticles();
-                this.isLoading.set(false);
-              },
-              error: (err) => {
-                console.error('Erreur upload image:', err);
-                this.loadArticles();
-                this.isLoading.set(false);
-              }
-            });
-          } else {
-            this.loadArticles();
-            this.isLoading.set(false);
-          }
-        },
-        error: (err) => {
-          console.error(err);
-          this.errorMessage.set(err.error?.message || 'Erreur lors de la création');
-          this.isLoading.set(false);
-        }
-      });
-
-    } else if (article.id) {
-      const request: UpdateArticleRequest = {
-        ref: article.ref,
-        article: article.article,
-        famille: article.famille || '',
-        sousFamille: article.sousFamille || '',
-        typeProcess: article.typeProcess || '',
-        typeProduit: article.typeProduit || '',
-        prixUnitaire: article.prixUnitaire || 0,
-        mpq: article.mpq || 0,
-        stock: article.stock || 0,
-        clients: article.clients || [],
-        processes: article.processes || []
-      };
-
-      this.articleService.updateArticle(article.id, request).subscribe({
-        next: (response) => {
-          // ✅ Upload de l'image si présente
-          if (article.imageFile) {
-            this.articleService.uploadImage(article.id!, article.imageFile).subscribe({
-              next: () => {
-                this.loadArticles();
-                this.isLoading.set(false);
-              },
-              error: (err) => {
-                console.error('Erreur upload image:', err);
-                this.loadArticles();
-                this.isLoading.set(false);
-              }
-            });
-          } else if (!article.imageFilename && !article.imagePreview) {
-            // Supprimer l'image si elle a été retirée
-            this.articleService.deleteImage(article.id!).subscribe({
-              next: () => {
-                this.loadArticles();
-                this.isLoading.set(false);
-              },
-              error: () => {
-                this.loadArticles();
-                this.isLoading.set(false);
-              }
-            });
-          } else {
-            this.loadArticles();
-            this.isLoading.set(false);
-          }
-        },
-        error: (err) => {
-          console.error(err);
-          this.errorMessage.set(err.error?.message || 'Erreur lors de la mise à jour');
-          this.isLoading.set(false);
-        }
-      });
-    }
+  if (!article.ref?.trim()) {
+    this.errorMessage.set('La référence est obligatoire');
+    return;
   }
+
+  if (!article.article?.trim()) {
+    this.errorMessage.set('Le nom de l\'article est obligatoire');
+    return;
+  }
+
+  this.isLoading.set(true);
+  this.errorMessage.set('');
+
+  if (article.isNew) {
+    // CRÉATION D'UN NOUVEL ARTICLE
+    const request: CreateArticleRequest = {
+      ref: article.ref,
+      article: article.article,
+      famille: article.famille || '',
+      sousFamille: article.sousFamille || '',
+      typeProcess: article.typeProcess || '',
+      typeProduit: article.typeProduit || '',
+      prixUnitaire: article.prixUnitaire || 0,
+      mpq: article.mpq || 0,
+      stock: article.stock || 0,
+      clients: article.clients || [],
+      processes: article.processes || []
+    };
+
+    this.articleService.createArticle(request).subscribe({
+      next: (response) => {
+        console.log('✅ Article créé:', response);
+
+        // Si une image a été sélectionnée, l'uploader
+        if (article.imageFile) {
+          console.log('📤 Upload de l\'image...');
+          this.articleService.uploadImage(response.id, article.imageFile).subscribe({
+            next: (updatedResponse) => {
+              console.log('✅ Image uploadée avec succès:', updatedResponse);
+              this.loadArticles();
+              this.isLoading.set(false);
+            },
+            error: (err) => {
+              console.error('❌ Erreur upload image:', err);
+              this.errorMessage.set('Article créé mais erreur lors de l\'upload de l\'image');
+              this.loadArticles();
+              this.isLoading.set(false);
+            }
+          });
+        } else {
+          this.loadArticles();
+          this.isLoading.set(false);
+        }
+      },
+      error: (err) => {
+        console.error('❌ Erreur création article:', err);
+        this.errorMessage.set(err.error?.message || 'Erreur lors de la création');
+        this.isLoading.set(false);
+      }
+    });
+
+  } else if (article.id) {
+    // MISE À JOUR D'UN ARTICLE EXISTANT
+    const request: UpdateArticleRequest = {
+      ref: article.ref,
+      article: article.article,
+      famille: article.famille || '',
+      sousFamille: article.sousFamille || '',
+      typeProcess: article.typeProcess || '',
+      typeProduit: article.typeProduit || '',
+      prixUnitaire: article.prixUnitaire || 0,
+      mpq: article.mpq || 0,
+      stock: article.stock || 0,
+      clients: article.clients || [],
+      processes: article.processes || []
+    };
+
+    this.articleService.updateArticle(article.id, request).subscribe({
+      next: (response) => {
+        console.log('✅ Article mis à jour:', response);
+
+        // Gérer l'image
+        if (article.imageFile) {
+          // Nouvelle image à uploader
+          console.log('📤 Upload de la nouvelle image...');
+          this.articleService.uploadImage(article.id!, article.imageFile).subscribe({
+            next: () => {
+              console.log('✅ Image uploadée');
+              this.loadArticles();
+              this.isLoading.set(false);
+            },
+            error: (err) => {
+              console.error('❌ Erreur upload image:', err);
+              this.loadArticles();
+              this.isLoading.set(false);
+            }
+          });
+        } else if (!article.imagePreview && !article.imageFilename) {
+          // L'image a été supprimée
+          console.log('🗑️ Suppression de l\'image...');
+          this.articleService.deleteImage(article.id!).subscribe({
+            next: () => {
+              console.log('✅ Image supprimée');
+              this.loadArticles();
+              this.isLoading.set(false);
+            },
+            error: () => {
+              this.loadArticles();
+              this.isLoading.set(false);
+            }
+          });
+        } else {
+          // Pas de changement d'image
+          this.loadArticles();
+          this.isLoading.set(false);
+        }
+      },
+      error: (err) => {
+        console.error('❌ Erreur mise à jour article:', err);
+        this.errorMessage.set(err.error?.message || 'Erreur lors de la mise à jour');
+        this.isLoading.set(false);
+      }
+    });
+  }
+}
 
   cancelEdit(index: number) {
     const article = this.filteredArticles()[index];

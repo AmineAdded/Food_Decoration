@@ -189,20 +189,26 @@ public class ArticleService {
     }
     @Transactional
     public ArticleResponse updateArticleImage(Long id, MultipartFile file) throws IOException {
+        log.info("🔍 Recherche article ID: {}", id);
+
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Article non trouvé"));
 
+        log.info("📦 Article trouvé: {}", article.getRef());
+
         // Supprimer l'ancienne image si elle existe
         if (article.getImageFilename() != null) {
+            log.info("🗑️ Suppression ancienne image: {}", article.getImageFilename());
             fileStorageService.deleteImage(article.getImageFilename());
         }
 
         // Sauvegarder la nouvelle image
+        log.info("💾 Sauvegarde nouvelle image...");
         String filename = fileStorageService.saveImage(file);
         article.setImageFilename(filename);
 
         article = articleRepository.save(article);
-        log.info("Image mise à jour pour l'article: {}", article.getRef());
+        log.info("✅ Image mise à jour pour l'article: {} -> {}", article.getRef(), filename);
 
         // Recharger avec les relations
         articleRepository.findByIdWithClients(id);
