@@ -10,140 +10,143 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
   imports: [CommonModule],
   template: `
     <nav class="navbar">
-      <div class="navbar-left">
+      <div class="navbar-container">
+        <!-- Logo Section -->
         <div class="logo-section">
-          <svg class="flower-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="25" r="12" fill="#E91E63" />
-            <circle cx="75" cy="50" r="12" fill="#E91E63" />
-            <circle cx="50" cy="75" r="12" fill="#E91E63" />
-            <circle cx="25" cy="50" r="12" fill="#E91E63" />
-            <circle cx="65" cy="35" r="9" fill="#F06292" />
-            <circle cx="65" cy="65" r="9" fill="#F06292" />
-            <circle cx="35" cy="65" r="9" fill="#F06292" />
-            <circle cx="35" cy="35" r="9" fill="#F06292" />
-            <circle cx="50" cy="50" r="15" fill="#4CAF50" />
-            <circle cx="50" cy="50" r="10" fill="#81C784" />
-          </svg>
-          <h1>Flower & Flower</h1>
+          <div class="logo-circle">
+            <svg class="flower-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="25" r="12" fill="#E91E63" />
+              <circle cx="75" cy="50" r="12" fill="#E91E63" />
+              <circle cx="50" cy="75" r="12" fill="#E91E63" />
+              <circle cx="25" cy="50" r="12" fill="#E91E63" />
+              <circle cx="65" cy="35" r="9" fill="#F06292" />
+              <circle cx="65" cy="65" r="9" fill="#F06292" />
+              <circle cx="35" cy="65" r="9" fill="#F06292" />
+              <circle cx="35" cy="35" r="9" fill="#F06292" />
+              <circle cx="50" cy="50" r="15" fill="#4CAF50" />
+              <circle cx="50" cy="50" r="10" fill="#81C784" />
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>Flower & Flower</h1>
+            <span class="tagline">Gestion de Production</span>
+          </div>
         </div>
 
-        <div class="nav-menu">
-          <button
-            class="nav-item"
-            [class.active]="activeMenu() === 'articles'"
-            (click)="setActiveMenu('articles')"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path
-                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
-              />
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-              <line x1="12" y1="22.08" x2="12" y2="12" />
-            </svg>
-            Fiche d'article
-          </button>
+        <!-- Navigation Menu -->
+        <div class="nav-section">
+          <div class="nav-group">
+            <span class="group-label">Données</span>
+            <div class="nav-items">
+              <button
+                class="nav-item"
+                [class.active]="activeMenu() === 'articles'"
+                (click)="setActiveMenu('articles')"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                </svg>
+                <span class="nav-text">Articles</span>
+              </button>
 
-          <button
-            class="nav-item"
-            [class.active]="activeMenu() === 'process'"
-            (click)="setActiveMenu('process')"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 1v6m0 6v6m-6-6H0m6 0h6m-6 0a6 6 0 1 0 12 0 6 6 0 1 0-12 0" />
-            </svg>
-            Process
-          </button>
+              <button
+                class="nav-item"
+                [class.active]="activeMenu() === 'process'"
+                (click)="setActiveMenu('process')"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 1v6m0 6v6" />
+                </svg>
+                <span class="nav-text">Process</span>
+              </button>
 
-          <button
-            class="nav-item"
-            [class.active]="activeMenu() === 'clients'"
-            (click)="setActiveMenu('clients')"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            Clients
-          </button>
+              <button
+                class="nav-item"
+                [class.active]="activeMenu() === 'clients'"
+                (click)="setActiveMenu('clients')"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+                <span class="nav-text">Clients</span>
+              </button>
+            </div>
+          </div>
 
-          <button
-            class="nav-item"
-            [class.active]="activeMenu() === 'production'"
-            (click)="setActiveMenu('production')"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
-            Production
-          </button>
+          <div class="nav-divider"></div>
 
-          <button
-            class="nav-item"
-            [class.active]="activeMenu() === 'commande'"
-            (click)="setActiveMenu('commande')"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <path d="M16 10a4 4 0 0 1-8 0" />
-            </svg>
-            Commandes
-          </button>
+          <div class="nav-group">
+            <span class="group-label">Opérations</span>
+            <div class="nav-items">
+              <button
+                class="nav-item"
+                [class.active]="activeMenu() === 'production'"
+                (click)="setActiveMenu('production')"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                <span class="nav-text">Production</span>
+              </button>
 
-          <button
-            class="nav-item"
-            [class.active]="activeMenu() === 'livraison'"
-            (click)="setActiveMenu('livraison')"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="1" y="3" width="15" height="13"></rect>
-              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-              <circle cx="5.5" cy="18.5" r="2.5"></circle>
-              <circle cx="18.5" cy="18.5" r="2.5"></circle>
-            </svg>
-            Livraison
-          </button>
-        </div>
-      </div>
+              <button
+                class="nav-item"
+                [class.active]="activeMenu() === 'commande'"
+                (click)="setActiveMenu('commande')"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                </svg>
+                <span class="nav-text">Commandes</span>
+              </button>
 
-      <div class="navbar-right">
-        <div class="user-info" *ngIf="currentUser">
-          <span class="user-name">{{ currentUser.firstname }} {{ currentUser.lastname }}</span>
-          <span class="user-email">{{ currentUser.email }}</span>
+              <button
+                class="nav-item"
+                [class.active]="activeMenu() === 'livraison'"
+                (click)="setActiveMenu('livraison')"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="1" y="3" width="15" height="13" />
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                </svg>
+                <span class="nav-text">Livraison</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <button class="profile-btn" (click)="openProfile()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          Profil
-        </button>
+        <!-- User Section -->
+        <div class="user-section">
+          <div class="user-info" *ngIf="currentUser">
+            <div class="user-details">
+              <span class="user-name">{{ currentUser.firstname }} {{ currentUser.lastname }}</span>
+              <span class="user-email">{{ currentUser.email }}</span>
+            </div>
+          </div>
 
-        <button class="logout-btn" (click)="logout()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          Déconnexion
-        </button>
+          <div class="user-actions">
+            <button class="action-btn profile-btn" (click)="openProfile()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span>Profil</span>
+            </button>
+
+            <button class="action-btn logout-btn" (click)="logout()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Quitter</span>
+            </button>
+          </div>
+        </div>
       </div>
     </nav>
   `,
@@ -151,157 +154,325 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
     `
       .navbar {
         background: white;
-        padding: 1rem 2rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         position: sticky;
         top: 0;
         z-index: 100;
+        border-bottom: 3px solid #E91E63;
       }
 
-      .navbar-left {
-        display: flex;
+      .navbar-container {
+        display: grid;
+        grid-template-columns: 280px 1fr 320px;
         align-items: center;
-        gap: 3rem;
+        padding: 1.25rem 2rem;
+        gap: 2rem;
+        max-width: 1920px;
+        margin: 0 auto;
       }
 
+      /* Logo Section */
       .logo-section {
         display: flex;
         align-items: center;
         gap: 1rem;
       }
 
-      .flower-icon {
-        width: 40px;
-        height: 40px;
+      .logo-circle {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #fff0f5, #ffe4ec);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.2);
+        flex-shrink: 0;
       }
 
-      .logo-section h1 {
-        font-size: 1.5rem;
+      .flower-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      .brand-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+      }
+
+      .brand-text h1 {
+        font-size: 1.3rem;
         color: #c2185b;
         font-family: 'Georgia', serif;
         margin: 0;
+        font-weight: 500;
+        line-height: 1.2;
       }
 
-      .nav-menu {
+      .tagline {
+        font-size: 0.75rem;
+        color: #999;
+        font-weight: 400;
+      }
+
+      /* Navigation Section */
+      .nav-section {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .nav-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .group-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 0 0.75rem;
+      }
+
+      .nav-items {
         display: flex;
         gap: 0.5rem;
+      }
+
+      .nav-divider {
+        width: 2px;
+        height: 60px;
+        background: linear-gradient(to bottom, transparent, #e0e0e0, transparent);
       }
 
       .nav-item {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.25rem;
+        gap: 0.35rem;
+        padding: 0.75rem 1rem;
         background: transparent;
-        border: none;
-        border-radius: 8px;
-        color: #666;
-        font-weight: 500;
+        border: 2px solid transparent;
+        border-radius: 12px;
         cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .nav-item svg {
+        stroke-width: 2;
+        color: #666;
+        transition: all 0.3s ease;
+      }
+
+      .nav-text {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #666;
         transition: all 0.3s ease;
       }
 
       .nav-item:hover {
-        background: #fff5f7;
+        background: #fff0f5;
+        border-color: #ffe4ec;
+        transform: translateY(-2px);
+      }
+
+      .nav-item:hover svg,
+      .nav-item:hover .nav-text {
         color: #c2185b;
       }
 
       .nav-item.active {
         background: linear-gradient(135deg, #e91e63, #f06292);
+        border-color: #e91e63;
+        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+      }
+
+      .nav-item.active svg,
+      .nav-item.active .nav-text {
         color: white;
       }
 
-      .nav-item svg {
-        stroke-width: 2;
-      }
-
-      .navbar-right {
+      /* User Section */
+      .user-section {
         display: flex;
         align-items: center;
         gap: 1rem;
+        justify-content: flex-end;
       }
 
       .user-info {
         display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-right: 1rem;
+        border-right: 2px solid #f0f0f0;
+      }
+
+      .user-avatar {
+        width: 42px;
+        height: 42px;
+        background: linear-gradient(135deg, #9c27b0, #ba68c8);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 0.9rem;
+        box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+      }
+
+      .user-details {
+        display: flex;
         flex-direction: column;
-        align-items: flex-end;
-        margin-right: 0.5rem;
+        gap: 0.15rem;
       }
 
       .user-name {
         font-weight: 600;
-        color: #c2185b;
+        color: #333;
         font-size: 0.9rem;
       }
 
       .user-email {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: #999;
       }
 
-      .profile-btn,
-      .logout-btn {
+      .user-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .action-btn {
         display: flex;
         align-items: center;
         gap: 0.5rem;
         padding: 0.65rem 1.1rem;
-        color: white;
         border: none;
-        border-radius: 8px;
+        border-radius: 10px;
         cursor: pointer;
         font-weight: 600;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         transition: all 0.3s ease;
       }
 
       .profile-btn {
         background: linear-gradient(135deg, #9c27b0, #ba68c8);
+        color: white;
       }
 
       .profile-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+        box-shadow: 0 4px 12px rgba(156, 39, 176, 0.4);
       }
 
       .logout-btn {
         background: linear-gradient(135deg, #e91e63, #f06292);
+        color: white;
       }
 
       .logout-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.4);
       }
 
-      @media (max-width: 1024px) {
-        .navbar {
-          flex-direction: column;
+      /* Responsive Design */
+      @media (max-width: 1600px) {
+        .navbar-container {
+          grid-template-columns: 250px 1fr 280px;
+        }
+
+        .nav-item {
+          padding: 0.65rem 0.85rem;
+        }
+
+        .nav-text {
+          font-size: 0.75rem;
+        }
+      }
+
+      @media (max-width: 1400px) {
+        .navbar-container {
+          grid-template-columns: 220px 1fr 260px;
+          gap: 1.5rem;
+        }
+
+        .group-label {
+          display: none;
+        }
+
+        .nav-group {
+          gap: 0;
+        }
+      }
+
+      @media (max-width: 1200px) {
+        .navbar-container {
+          grid-template-columns: 1fr;
           gap: 1rem;
-          padding: 1rem;
         }
 
-        .navbar-left {
-          flex-direction: column;
+        .logo-section {
+          justify-content: center;
+        }
+
+        .nav-section {
+          flex-wrap: wrap;
           gap: 1rem;
-          width: 100%;
         }
 
-        .nav-menu {
-          width: 100%;
-          justify-content: center;
-          flex-wrap: wrap;
+        .nav-divider {
+          display: none;
         }
 
-        .navbar-right {
-          width: 100%;
+        .user-section {
           justify-content: center;
-          flex-wrap: wrap;
         }
 
         .user-info {
-          align-items: center;
+          border-right: none;
+          padding-right: 0;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .navbar-container {
+          padding: 1rem;
+        }
+
+        .brand-text h1 {
+          font-size: 1.1rem;
+        }
+
+        .tagline {
+          display: none;
+        }
+
+        .nav-items {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        .user-info {
+          display: none;
+        }
+
+        .action-btn span {
+          display: none;
+        }
+
+        .action-btn {
+          padding: 0.7rem;
+          min-width: 42px;
+          justify-content: center;
         }
       }
     `,
