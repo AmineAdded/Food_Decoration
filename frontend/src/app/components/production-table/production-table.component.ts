@@ -28,16 +28,16 @@ export class ProductionTableComponent implements OnInit {
 
   productions = signal<ProductionTable[]>([]);
   availableArticles = signal<{ref: string, nom: string}[]>([]);
-  
+
   searchTerm = signal('');
   searchArticleRef = signal('');
   searchDate = signal('');
   searchYear = signal<number | null>(null);
   searchMonth = signal<number | null>(null);
-  
+
   // ✅ NOUVEAU: État du tri
   sortOrder = signal<SortOrder>(null);
-  
+
   isLoading = signal(false);
   errorMessage = signal('');
 
@@ -55,24 +55,30 @@ export class ProductionTableComponent implements OnInit {
   }
 
   loadProductions() {
-    this.isLoading.set(true);
-    this.productionService.getAllProductions().subscribe({
-      next: (productions) => {
-        const mapped: ProductionTable[] = productions.map(p => ({
-          ...p,
-          isEditing: false,
-          isNew: false
-        }));
-        this.productions.set(mapped);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        console.error(error);
-        this.errorMessage.set('Erreur lors du chargement des productions');
-        this.isLoading.set(false);
-      }
-    });
-  }
+  this.isLoading.set(true);
+  this.productionService.getAllProductions().subscribe({
+    next: (productions) => {
+      const mapped: ProductionTable[] = productions.map(p => ({
+        ...p,
+        isEditing: false,
+        isNew: false
+      }));
+      // ✅ Trier par date de création décroissante (plus récent en premier)
+      mapped.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // Ordre décroissant
+      });
+      this.productions.set(mapped);
+      this.isLoading.set(false);
+    },
+    error: (error) => {
+      console.error(error);
+      this.errorMessage.set('Erreur lors du chargement des productions');
+      this.isLoading.set(false);
+    }
+  });
+}
 
   loadArticles() {
     this.articleService.getAllArticles().subscribe({
@@ -92,7 +98,7 @@ export class ProductionTableComponent implements OnInit {
   // ✅ NOUVEAU: Fonction de tri
   toggleSort() {
     const currentOrder = this.sortOrder();
-    
+
     if (currentOrder === null) {
       this.sortOrder.set('desc'); // Premier clic: descendant (plus récent d'abord)
     } else if (currentOrder === 'desc') {
@@ -152,7 +158,7 @@ export class ProductionTableComponent implements OnInit {
       filtered = [...filtered].sort((a, b) => {
         const dateA = new Date(a.dateProduction).getTime();
         const dateB = new Date(b.dateProduction).getTime();
-        
+
         return order === 'asc' ? dateA - dateB : dateB - dateA;
       });
     }
@@ -390,22 +396,22 @@ export class ProductionTableComponent implements OnInit {
 
   exportToExcel() {
     this.isLoading.set(true);
-    
+
     const articleRef = this.searchArticleRef() || undefined;
     const date = this.searchDate() || undefined;
-    
+
     this.productionService.exportToExcel(articleRef, date).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        
+
         const today = new Date().toISOString().split('T')[0];
         link.download = `productions_${today}.xlsx`;
-        
+
         link.click();
         window.URL.revokeObjectURL(url);
-        
+
         this.isLoading.set(false);
       },
       error: (error) => {

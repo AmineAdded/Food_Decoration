@@ -69,25 +69,31 @@ export class CommandeTableComponent implements OnInit {
   }
 
   loadCommandes() {
-    this.isLoading.set(true);
-    this.commandeService.getAllCommandes().subscribe({
-      next: (commandes) => {
-        const mapped: CommandeTable[] = commandes.map((c) => ({
-          ...c,
-          isEditing: false,
-          isNew: false,
-        }));
-        this.commandes.set(mapped);
-        this.summary.set(null);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        console.error(error);
-        this.errorMessage.set('Erreur lors du chargement des commandes');
-        this.isLoading.set(false);
-      },
-    });
-  }
+  this.isLoading.set(true);
+  this.commandeService.getAllCommandes().subscribe({
+    next: (commandes) => {
+      const mapped: CommandeTable[] = commandes.map((c) => ({
+        ...c,
+        isEditing: false,
+        isNew: false,
+      }));
+      // ✅ Trier par date de création décroissante (plus récent en premier)
+      mapped.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // Ordre décroissant
+      });
+      this.commandes.set(mapped);
+      this.summary.set(null);
+      this.isLoading.set(false);
+    },
+    error: (error) => {
+      console.error(error);
+      this.errorMessage.set('Erreur lors du chargement des commandes');
+      this.isLoading.set(false);
+    },
+  });
+}
 
   loadArticles() {
     this.articleService.getAllArticles().subscribe({
@@ -317,13 +323,20 @@ export class CommandeTableComponent implements OnInit {
   }
 
   private updateCommandes(commandes: CommandeResponse[]) {
-    const mapped: CommandeTable[] = commandes.map((c) => ({
-      ...c,
-      isEditing: false,
-      isNew: false,
-    }));
-    this.commandes.set(mapped);
-  }
+  const mapped: CommandeTable[] = commandes.map((c) => ({
+    ...c,
+    isEditing: false,
+    isNew: false,
+  }));
+  // ✅ Trier par date de création décroissante
+  mapped.sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0).getTime();
+    const dateB = new Date(b.createdAt || 0).getTime();
+    return dateB - dateA;
+  });
+  this.commandes.set(mapped);
+  this.isLoading.set(false);
+}
 
   private handleSearchError(error: any) {
     console.error(error);

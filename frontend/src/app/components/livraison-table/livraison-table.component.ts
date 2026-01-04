@@ -36,14 +36,14 @@ export class LivraisonTableComponent implements OnInit {
     clientNom: string,
     quantiteRestante: number
   }[]>([]);
-  
+
   searchTerm = signal('');
   searchArticleRef = signal('');
   searchClientNom = signal('');
   searchNumeroCommande = signal('');
-  
+
   sortOrder = signal<SortOrder>(null);
-  
+
   isLoading = signal(false);
   errorMessage = signal('');
 
@@ -65,24 +65,31 @@ export class LivraisonTableComponent implements OnInit {
   }
 
   loadLivraisons() {
-    this.isLoading.set(true);
-    this.livraisonService.getAllLivraisons().subscribe({
-      next: (livraisons) => {
-        const mapped: LivraisonTable[] = livraisons.map(l => ({
-          ...l,
-          isEditing: false,
-          isNew: false
-        }));
-        this.livraisons.set(mapped);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        console.error(error);
-        this.errorMessage.set('Erreur lors du chargement des livraisons');
-        this.isLoading.set(false);
-      }
-    });
-  }
+  this.isLoading.set(true);
+  this.livraisonService.getAllLivraisons().subscribe({
+    next: (livraisons) => {
+      const mapped: LivraisonTable[] = livraisons.map(l => ({
+        ...l,
+        isEditing: false,
+        isNew: false
+      }));
+      // ✅ Trier par date de création décroissante (plus récent en premier)
+      mapped.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // Ordre décroissant
+      });
+      this.livraisons.set(mapped);
+      this.isLoading.set(false);
+    },
+    error: (error) => {
+      console.error(error);
+      this.errorMessage.set('Erreur lors du chargement des livraisons');
+      this.isLoading.set(false);
+    }
+  });
+}
+
 
   loadArticles() {
     this.articleService.getAllArticles().subscribe({
@@ -132,7 +139,7 @@ export class LivraisonTableComponent implements OnInit {
 
   toggleSort() {
     const currentOrder = this.sortOrder();
-    
+
     if (currentOrder === null) {
       this.sortOrder.set('desc');
     } else if (currentOrder === 'desc') {
@@ -162,7 +169,7 @@ export class LivraisonTableComponent implements OnInit {
       filtered = [...filtered].sort((a, b) => {
         const dateA = new Date(a.dateLivraison).getTime();
         const dateB = new Date(b.dateLivraison).getTime();
-        
+
         return order === 'asc' ? dateA - dateB : dateB - dateA;
       });
     }
@@ -201,14 +208,20 @@ export class LivraisonTableComponent implements OnInit {
   }
 
   private updateLivraisons(livraisons: LivraisonResponse[]) {
-    const mapped: LivraisonTable[] = livraisons.map(l => ({
-      ...l,
-      isEditing: false,
-      isNew: false
-    }));
-    this.livraisons.set(mapped);
-    this.isLoading.set(false);
-  }
+  const mapped: LivraisonTable[] = livraisons.map(l => ({
+    ...l,
+    isEditing: false,
+    isNew: false
+  }));
+  // ✅ Trier par date de création décroissante
+  mapped.sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0).getTime();
+    const dateB = new Date(b.createdAt || 0).getTime();
+    return dateB - dateA;
+  });
+  this.livraisons.set(mapped);
+  this.isLoading.set(false);
+}
 
   private handleSearchError(error: any) {
     console.error(error);
@@ -416,7 +429,7 @@ export class LivraisonTableComponent implements OnInit {
   }
 
   getFilteredCommandes(articleRef: string, clientNom: string) {
-    return this.availableCommandes().filter(c => 
+    return this.availableCommandes().filter(c =>
       c.articleRef === articleRef && c.clientNom === clientNom
     );
   }
