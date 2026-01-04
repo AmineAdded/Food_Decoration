@@ -10,7 +10,19 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client
   },
   {
+    path: 'auth',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'forgot-password',
+    renderMode: RenderMode.Client
+  },
+  {
+    path: 'dashboard',
+    renderMode: RenderMode.Client
+  },
+  {
     path: '**',
-    renderMode: RenderMode.Prerender
+    renderMode: RenderMode.Client
   }
 ];
