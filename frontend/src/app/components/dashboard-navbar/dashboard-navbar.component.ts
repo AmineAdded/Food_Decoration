@@ -83,7 +83,7 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
             </svg>
             Production
           </button>
-          
+
           <button
             class="nav-item"
             [class.active]="activeMenu() === 'commande'"
@@ -95,6 +95,29 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
               <path d="M16 10a4 4 0 0 1-8 0" />
             </svg>
             Commandes
+          </button>
+
+          <button
+            class="nav-item"
+            [class.active]="activeMenu() === 'livraison'"
+            (click)="setActiveMenu('livraison')"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+            Livraison
           </button>
         </div>
       </div>
@@ -285,12 +308,14 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
   ],
 })
 export class DashboardNavbarComponent implements OnInit {
-  activeMenu = signal<'articles' | 'process' | 'clients' | 'production' | 'commande'>('articles');
+  activeMenu = signal<'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison'>(
+    'articles'
+  );
   currentUser: AuthResponse | null = null;
 
   @Output() profileClick = new EventEmitter<void>();
   @Output() menuChange = new EventEmitter<
-    'articles' | 'process' | 'clients' | 'production' | 'commande'
+    'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison'
   >();
 
   constructor(private authService: AuthService, private router: Router) {}
@@ -301,7 +326,9 @@ export class DashboardNavbarComponent implements OnInit {
     });
   }
 
-  setActiveMenu(menu: 'articles' | 'process' | 'clients' | 'production' | 'commande') {
+  setActiveMenu(
+    menu: 'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison'
+  ) {
     this.activeMenu.set(menu);
     this.menuChange.emit(menu);
   }

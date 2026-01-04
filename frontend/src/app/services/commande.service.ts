@@ -22,6 +22,7 @@ export interface UpdateCommandeRequest {
 }
 
 export interface CommandeResponse {
+  quantiteNonLivree: number;
   id: number;
   articleRef: string;
   articleNom: string;

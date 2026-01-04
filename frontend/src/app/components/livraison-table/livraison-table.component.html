@@ -1,0 +1,377 @@
+<!-- frontend/src/app/components/livraison-table/livraison-table.component.html -->
+<div class="livraison-container">
+  <div class="table-header">
+    <h2>Gestion des Livraisons</h2>
+    <div class="header-actions">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Rechercher (BL, Article, Client, Commande...)"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      />
+      <button class="add-btn" (click)="addNewRow()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        Ajouter une livraison
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtres avancés -->
+  <div class="filters-section">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label>Référence d'article</label>
+        <select
+          class="filter-select"
+          [(ngModel)]="searchArticleRef"
+          (ngModelChange)="performSearch()"
+        >
+          <option value="">Tous les articles</option>
+          <option *ngFor="let article of availableArticles()" [value]="article.ref">
+            {{ article.ref }} - {{ article.nom }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Client</label>
+        <select
+          class="filter-select"
+          [(ngModel)]="searchClientNom"
+          (ngModelChange)="performSearch()"
+        >
+          <option value="">Tous les clients</option>
+          <option *ngFor="let client of availableClients()" [value]="client">
+            {{ client }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>N° Commande Client</label>
+        <select
+          class="filter-select"
+          [(ngModel)]="searchNumeroCommande"
+          (ngModelChange)="performSearch()"
+        >
+          <option value="">Toutes les commandes</option>
+          <option *ngFor="let cmd of availableCommandes()" [value]="cmd.numeroCommandeClient">
+            {{ cmd.numeroCommandeClient }} ({{ cmd.articleRef }} - {{ cmd.clientNom }})
+          </option>
+        </select>
+      </div>
+
+      <button class="reset-btn" (click)="resetFilters()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="1 4 1 10 7 10" />
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+        </svg>
+        Réinitialiser
+      </button>
+    </div>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="errorMessage()" class="error-message">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+    {{ errorMessage() }}
+    <button class="close-error" (click)="errorMessage.set('')">×</button>
+  </div>
+
+  <div class="table-wrapper">
+    <!-- Livraisons en grille -->
+    <div class="livraison-grid">
+      <!-- ✅ HEADER FIXE -->
+      <div class="livraison-header" *ngIf="filteredLivraisons().length > 0">
+        <table class="livraison-main-table">
+          <thead>
+            <tr>
+              <th>N° BL</th>
+              <th>Ref Article</th>
+              <th>Article</th>
+              <th>Client</th>
+              <th>N° Commande Client</th>
+              <th>Quantité Livrée</th>
+              <th>
+                Date de Livraison
+                <button
+                  class="sort-btn"
+                  (click)="toggleSort()"
+                  title="Trier par date de livraison"
+                >
+                  <svg
+                    *ngIf="sortOrder() === null"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <polyline points="19 12 12 19 5 12" />
+                  </svg>
+                  <svg
+                    *ngIf="sortOrder() === 'desc'"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <line x1="12" y1="19" x2="12" y2="5" />
+                    <polyline points="5 12 12 5 19 12" />
+                  </svg>
+                  <svg
+                    *ngIf="sortOrder() === 'asc'"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <polyline points="19 12 12 19 5 12" />
+                  </svg>
+                </button>
+              </th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+
+      <!-- ✅ LIGNES DE DONNÉES -->
+      <div
+        *ngFor="let liv of filteredLivraisons(); let i = index"
+        class="livraison-block"
+        [class.editing-block]="isEditing(liv)"
+      >
+        <table class="livraison-main-table">
+          <tbody>
+            <tr>
+              <!-- N° BL -->
+              <td>
+                <span class="bl-badge">{{ liv.numeroBL }}</span>
+              </td>
+
+              <!-- Ref Article -->
+              <td>
+                <select
+                  *ngIf="isEditing(liv)"
+                  [(ngModel)]="liv.articleRef"
+                  (ngModelChange)="onArticleChange(liv)"
+                  class="table-select"
+                >
+                  <option value="">Sélectionner un article</option>
+                  <option *ngFor="let article of availableArticles()" [value]="article.ref">
+                    {{ article.ref }} - {{ article.nom }}
+                  </option>
+                </select>
+                <input
+                  *ngIf="!isEditing(liv)"
+                  type="text"
+                  [value]="liv.articleRef"
+                  disabled
+                  class="table-input"
+                />
+              </td>
+
+              <!-- Article Nom -->
+              <td>
+                <input type="text" [value]="liv.articleNom" disabled class="table-input" />
+              </td>
+
+              <!-- Client -->
+              <td>
+                <select *ngIf="isEditing(liv)" [(ngModel)]="liv.clientNom" class="table-select">
+                  <option value="">Sélectionner un client</option>
+                  <option *ngFor="let client of availableClients()" [value]="client">
+                    {{ client }}
+                  </option>
+                </select>
+                <input
+                  *ngIf="!isEditing(liv)"
+                  type="text"
+                  [value]="liv.clientNom"
+                  disabled
+                  class="table-input"
+                />
+              </td>
+
+              <!-- N° Commande Client -->
+              <td>
+                <select
+                  *ngIf="isEditing(liv)"
+                  [(ngModel)]="liv.numeroCommandeClient"
+                  class="table-select"
+                  [disabled]="!liv.articleRef || !liv.clientNom"
+                >
+                  <option value="">Sélectionner une commande</option>
+                  <option
+                    *ngFor="let cmd of getFilteredCommandes(liv.articleRef, liv.clientNom)"
+                    [value]="cmd.numeroCommandeClient"
+                  >
+                    {{ cmd.numeroCommandeClient }} (Restant: {{ cmd.quantiteRestante }})
+                  </option>
+                </select>
+                <input
+                  *ngIf="!isEditing(liv)"
+                  type="text"
+                  [value]="liv.numeroCommandeClient"
+                  disabled
+                  class="table-input"
+                />
+              </td>
+
+              <!-- Quantité Livrée -->
+              <td>
+                <div *ngIf="isEditing(liv)" class="quantity-group">
+                  <input
+                    type="number"
+                    [(ngModel)]="liv.quantiteLivree"
+                    class="table-input"
+                    min="1"
+                    [max]="getQuantiteRestante(liv.numeroCommandeClient)"
+                    placeholder="0"
+                  />
+                  <span
+                    *ngIf="liv.numeroCommandeClient"
+                    class="quantity-hint"
+                  >
+                    / {{ getQuantiteRestante(liv.numeroCommandeClient) }}
+                  </span>
+                </div>
+                <span *ngIf="!isEditing(liv)" class="quantity-badge">
+                  {{ liv.quantiteLivree }}
+                </span>
+              </td>
+
+              <!-- Date de Livraison -->
+              <td>
+                <input
+                  *ngIf="isEditing(liv)"
+                  type="date"
+                  [(ngModel)]="liv.dateLivraison"
+                  class="table-input"
+                />
+                <span *ngIf="!isEditing(liv)" class="date-display">
+                  {{ formatDate(liv.dateLivraison) }}
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="actions-cell">
+                <div class="action-buttons">
+                  <button
+                    *ngIf="!isEditing(liv)"
+                    class="edit-btn"
+                    (click)="editRow(i)"
+                    title="Modifier"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+
+                  <button
+                    *ngIf="isEditing(liv)"
+                    class="save-btn"
+                    (click)="saveRow(i)"
+                    title="Enregistrer"
+                    [disabled]="isLoading()"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </button>
+
+                  <button
+                    *ngIf="isEditing(liv)"
+                    class="cancel-btn"
+                    (click)="cancelEdit(i)"
+                    title="Annuler"
+                    [disabled]="isLoading()"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+
+                  <button
+                    class="delete-btn"
+                    (click)="deleteRow(i)"
+                    title="Supprimer"
+                    [disabled]="isLoading()"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path
+                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="filteredLivraisons().length === 0 && livraisons().length > 0" class="empty-state">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        <p>Aucun résultat trouvé pour cette recherche.</p>
+      </div>
+
+      <div *ngIf="livraisons().length === 0" class="empty-state">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M16 16l-4-4-4 4" />
+          <path d="M12 12V3" />
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+        </svg>
+        <p>Aucune livraison. Cliquez sur "Ajouter une livraison" pour commencer.</p>
+      </div>
+    </div>
+  </div>
+</div>

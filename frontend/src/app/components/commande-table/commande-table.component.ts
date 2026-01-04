@@ -421,6 +421,7 @@ export class CommandeTableComponent implements OnInit {
       updatedAt: '',
       isEditing: true,
       isNew: true,
+      quantiteNonLivree: 0
     };
 
     this.commandes.update((commandes) => [newCommande, ...commandes]);

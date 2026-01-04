@@ -15,6 +15,8 @@ import { ClientsTableComponent } from '../../components/clients-table/clients-ta
 import { ProcessTableComponent } from '../../components/process-table/process-table.component';
 import { ProductionTableComponent } from '../../components/production-table/production-table.component';
 import { CommandeTableComponent } from '../../components/commande-table/commande-table.component';
+import { LivraisonTableComponent } from '../../components/livraison-table/livraison-table.component';
+
 
 
 @Component({
@@ -29,6 +31,7 @@ import { CommandeTableComponent } from '../../components/commande-table/commande
     ProcessTableComponent,
     ProductionTableComponent,
     CommandeTableComponent,
+    LivraisonTableComponent,
   ],
   template: `
     <div class="dashboard-container">
@@ -48,6 +51,8 @@ import { CommandeTableComponent } from '../../components/commande-table/commande
         <!-- Production - nouvelle section -->
         <app-production-table *ngIf="activeMenu() === 'production'"></app-production-table>
         <app-commande-table *ngIf="activeMenu() === 'commande'"></app-commande-table>
+
+        <app-livraison-table *ngIf="activeMenu() === 'livraison'"></app-livraison-table>
 
       </div>
 
@@ -571,7 +576,7 @@ import { CommandeTableComponent } from '../../components/commande-table/commande
 export class DashboardComponent implements OnInit {
   currentUser: AuthResponse | null = null;
   showProfileModal = signal(false);
-  activeMenu = signal<'articles' | 'process' | 'clients' | 'production' | 'commande'>('articles');
+  activeMenu = signal<'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison'>('articles');
   activeTab = signal<'info' | 'password'>('info');
   isLoading = signal(false);
   errorMessage = signal('');
