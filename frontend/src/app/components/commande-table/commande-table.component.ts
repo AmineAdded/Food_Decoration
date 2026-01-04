@@ -17,6 +17,9 @@ interface CommandeTable extends CommandeResponse {
   isNew?: boolean;
 }
 
+type DateType = 'souhaitee' | 'ajout';
+type SearchMode = 'date' | 'periode';
+
 @Component({
   selector: 'app-commande-table',
   standalone: true,
@@ -33,9 +36,15 @@ export class CommandeTableComponent implements OnInit {
   searchTerm = signal('');
   searchArticleRef = signal('');
   searchClientNom = signal('');
-  searchDateSouhaitee = signal('');
-  searchDateAjout = signal('');
-  searchTypeDate = signal<'souhaitee' | 'ajout'>('souhaitee');
+  searchTypeDate = signal<DateType>('souhaitee');
+  searchMode = signal<SearchMode>('date');
+  
+  // Pour date unique
+  searchDate = signal('');
+  
+  // Pour période
+  searchDateDebut = signal('');
+  searchDateFin = signal('');
   
   summary = signal<CommandeSummaryResponse | null>(null);
   
@@ -105,7 +114,6 @@ export class CommandeTableComponent implements OnInit {
     });
   }
 
-  // ✅ Recherche avec filtres multiples
   filteredCommandes = computed(() => {
     let filtered = this.commandes();
     const term = this.searchTerm().toLowerCase();
@@ -122,35 +130,175 @@ export class CommandeTableComponent implements OnInit {
     return filtered;
   });
 
-  // ✅ Recherche par article
-  searchByArticle() {
-    const ref = this.searchArticleRef();
-    if (!ref) {
+  // ✅ Recherche intelligente selon les critères
+  performSearch() {
+    const articleRef = this.searchArticleRef();
+    const mode = this.searchMode();
+    const typeDate = this.searchTypeDate();
+    
+    // Pas de filtre => toutes les commandes
+    if (!articleRef && !this.hasDateFilter()) {
       this.loadCommandes();
       return;
     }
 
     this.isLoading.set(true);
-    this.commandeService.searchByArticleRef(ref).subscribe({
-      next: (commandes) => {
-        const mapped: CommandeTable[] = commandes.map(c => ({
-          ...c,
-          isEditing: false,
-          isNew: false
-        }));
-        this.commandes.set(mapped);
-        this.loadSummary();
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        console.error(error);
-        this.errorMessage.set('Erreur lors de la recherche');
-        this.isLoading.set(false);
-      }
+
+    // Cas 1: Ref + Période
+    if (articleRef && mode === 'periode' && this.searchDateDebut() && this.searchDateFin()) {
+      const searchObservable = typeDate === 'souhaitee'
+        ? this.commandeService.searchByArticleRefAndPeriodeSouhaitee(
+            articleRef, this.searchDateDebut(), this.searchDateFin())
+        : this.commandeService.searchByArticleRefAndPeriodeAjout(
+            articleRef, this.searchDateDebut(), this.searchDateFin());
+
+      searchObservable.subscribe({
+        next: (commandes) => {
+          this.updateCommandes(commandes);
+          this.loadSummary();
+          this.isLoading.set(false);
+        },
+        error: (error) => this.handleSearchError(error)
+      });
+      return;
+    }
+
+    // Cas 2: Ref + Date unique
+    if (articleRef && mode === 'date' && this.searchDate()) {
+      const searchObservable = typeDate === 'souhaitee'
+        ? this.commandeService.searchByArticleRefAndDateSouhaitee(articleRef, this.searchDate())
+        : this.commandeService.searchByArticleRefAndDateAjout(articleRef, this.searchDate());
+
+      searchObservable.subscribe({
+        next: (commandes) => {
+          this.updateCommandes(commandes);
+          this.loadSummary();
+          this.isLoading.set(false);
+        },
+        error: (error) => this.handleSearchError(error)
+      });
+      return;
+    }
+
+    // Cas 3: Seulement Ref => affiche le sommaire
+    if (articleRef && !this.hasDateFilter()) {
+      this.commandeService.searchByArticleRef(articleRef).subscribe({
+        next: (commandes) => {
+          this.updateCommandes(commandes);
+          this.loadSummary();
+          this.isLoading.set(false);
+        },
+        error: (error) => this.handleSearchError(error)
+      });
+      return;
+    }
+
+    // Cas 4: Seulement Date (pas de sommaire)
+    if (!articleRef && mode === 'date' && this.searchDate()) {
+      const searchObservable = typeDate === 'souhaitee'
+        ? this.commandeService.searchByDateSouhaitee(this.searchDate())
+        : this.commandeService.searchByDateAjout(this.searchDate());
+
+      searchObservable.subscribe({
+        next: (commandes) => {
+          this.updateCommandes(commandes);
+          this.summary.set(null); // Pas de sommaire
+          this.isLoading.set(false);
+        },
+        error: (error) => this.handleSearchError(error)
+      });
+      return;
+    }
+
+    // Fallback
+    this.loadCommandes();
+  }
+
+  // Helper: vérifie si un filtre de date est actif
+  hasDateFilter(): boolean {
+    if (this.searchMode() === 'date') {
+      return !!this.searchDate();
+    } else {
+      return !!(this.searchDateDebut() && this.searchDateFin());
+    }
+  }
+
+  // ✅ Charge le sommaire selon les filtres actifs
+  loadSummary() {
+    const articleRef = this.searchArticleRef();
+    const mode = this.searchMode();
+    const typeDate = this.searchTypeDate();
+
+    // Pas de sommaire si pas d'article sélectionné
+    if (!articleRef) {
+      this.summary.set(null);
+      return;
+    }
+
+    // Période
+    if (mode === 'periode' && this.searchDateDebut() && this.searchDateFin()) {
+      const summaryObservable = typeDate === 'souhaitee'
+        ? this.commandeService.getSummaryByArticleRefAndPeriodeSouhaitee(
+            articleRef, this.searchDateDebut(), this.searchDateFin())
+        : this.commandeService.getSummaryByArticleRefAndPeriodeAjout(
+            articleRef, this.searchDateDebut(), this.searchDateFin());
+
+      summaryObservable.subscribe({
+        next: (summary) => this.summary.set(summary),
+        error: (error) => console.error('Erreur sommaire:', error)
+      });
+      return;
+    }
+
+    // Date unique
+    if (mode === 'date' && this.searchDate()) {
+      const summaryObservable = typeDate === 'souhaitee'
+        ? this.commandeService.getSummaryByArticleRefAndDateSouhaitee(articleRef, this.searchDate())
+        : this.commandeService.getSummaryByArticleRefAndDateAjout(articleRef, this.searchDate());
+
+      summaryObservable.subscribe({
+        next: (summary) => this.summary.set(summary),
+        error: (error) => console.error('Erreur sommaire:', error)
+      });
+      return;
+    }
+
+    // Article seul
+    this.commandeService.getSummaryByArticleRef(articleRef).subscribe({
+      next: (summary) => this.summary.set(summary),
+      error: (error) => console.error('Erreur sommaire:', error)
     });
   }
 
-  // ✅ Recherche par client
+  private updateCommandes(commandes: CommandeResponse[]) {
+    const mapped: CommandeTable[] = commandes.map(c => ({
+      ...c,
+      isEditing: false,
+      isNew: false
+    }));
+    this.commandes.set(mapped);
+  }
+
+  private handleSearchError(error: any) {
+    console.error(error);
+    this.errorMessage.set('Erreur lors de la recherche');
+    this.isLoading.set(false);
+  }
+
+  // ✅ Réinitialiser tous les filtres
+  resetFilters() {
+    this.searchTerm.set('');
+    this.searchArticleRef.set('');
+    this.searchClientNom.set('');
+    this.searchDate.set('');
+    this.searchDateDebut.set('');
+    this.searchDateFin.set('');
+    this.searchMode.set('date');
+    this.searchTypeDate.set('souhaitee');
+    this.summary.set(null);
+    this.loadCommandes();
+  }
+
   searchByClient() {
     const nom = this.searchClientNom();
     if (!nom) {
@@ -161,121 +309,53 @@ export class CommandeTableComponent implements OnInit {
     this.isLoading.set(true);
     this.commandeService.searchByClientNom(nom).subscribe({
       next: (commandes) => {
-        const mapped: CommandeTable[] = commandes.map(c => ({
-          ...c,
-          isEditing: false,
-          isNew: false
-        }));
-        this.commandes.set(mapped);
+        this.updateCommandes(commandes);
         this.summary.set(null);
         this.isLoading.set(false);
       },
-      error: (error) => {
-        console.error(error);
-        this.errorMessage.set('Erreur lors de la recherche');
-        this.isLoading.set(false);
-      }
+      error: (error) => this.handleSearchError(error)
     });
   }
 
-  // ✅ Recherche par date
-  searchByDate() {
-    const typeDate = this.searchTypeDate();
-    const date = typeDate === 'souhaitee' ? this.searchDateSouhaitee() : this.searchDateAjout();
-    const articleRef = this.searchArticleRef();
-
-    if (!date && !articleRef) {
-      this.loadCommandes();
-      return;
-    }
-
+  // ✅ Export Excel
+  exportToExcel() {
     this.isLoading.set(true);
-
-    let searchObservable;
-
-    if (articleRef && date) {
-      // Recherche combinée
-      searchObservable = typeDate === 'souhaitee'
-        ? this.commandeService.searchByArticleRefAndDateSouhaitee(articleRef, date)
-        : this.commandeService.searchByArticleRefAndDateAjout(articleRef, date);
-    } else if (date) {
-      // Recherche par date uniquement
-      searchObservable = typeDate === 'souhaitee'
-        ? this.commandeService.searchByDateSouhaitee(date)
-        : this.commandeService.searchByDateAjout(date);
-    } else {
-      // Recherche par article uniquement (déjà gérée)
-      this.searchByArticle();
-      return;
+    
+    const articleRef = this.searchArticleRef() || undefined;
+    const dateType = this.searchTypeDate();
+    const mode = this.searchMode();
+    
+    let date: string | undefined;
+    let dateDebut: string | undefined;
+    let dateFin: string | undefined;
+    
+    if (mode === 'date' && this.searchDate()) {
+      date = this.searchDate();
+    } else if (mode === 'periode' && this.searchDateDebut() && this.searchDateFin()) {
+      dateDebut = this.searchDateDebut();
+      dateFin = this.searchDateFin();
     }
-
-    searchObservable.subscribe({
-      next: (commandes) => {
-        const mapped: CommandeTable[] = commandes.map(c => ({
-          ...c,
-          isEditing: false,
-          isNew: false
-        }));
-        this.commandes.set(mapped);
-        this.loadSummary();
+    
+    this.commandeService.exportToExcel(articleRef, dateType, date, dateDebut, dateFin).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        const today = new Date().toISOString().split('T')[0];
+        link.download = `commandes_${today}.xlsx`;
+        
+        link.click();
+        window.URL.revokeObjectURL(url);
+        
         this.isLoading.set(false);
       },
       error: (error) => {
-        console.error(error);
-        this.errorMessage.set('Erreur lors de la recherche');
+        console.error('Erreur lors de l\'export:', error);
+        this.errorMessage.set('Erreur lors de l\'export Excel');
         this.isLoading.set(false);
       }
     });
-  }
-
-  // ✅ Charger le sommaire selon les filtres actifs
-  loadSummary() {
-    const articleRef = this.searchArticleRef();
-    const typeDate = this.searchTypeDate();
-    const date = typeDate === 'souhaitee' ? this.searchDateSouhaitee() : this.searchDateAjout();
-
-    if (!articleRef && !date) {
-      this.summary.set(null);
-      return;
-    }
-
-    let summaryObservable;
-
-    if (articleRef && date) {
-      summaryObservable = typeDate === 'souhaitee'
-        ? this.commandeService.getSummaryByArticleRefAndDateSouhaitee(articleRef, date)
-        : this.commandeService.getSummaryByArticleRefAndDateAjout(articleRef, date);
-    } else if (articleRef) {
-      summaryObservable = this.commandeService.getSummaryByArticleRef(articleRef);
-    } else if (date) {
-      summaryObservable = typeDate === 'souhaitee'
-        ? this.commandeService.getSummaryByDateSouhaitee(date)
-        : this.commandeService.getSummaryByDateAjout(date);
-    } else {
-      this.summary.set(null);
-      return;
-    }
-
-    summaryObservable.subscribe({
-      next: (summary) => {
-        this.summary.set(summary);
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement du sommaire:', error);
-      }
-    });
-  }
-
-  // ✅ Réinitialiser les filtres
-  resetFilters() {
-    this.searchTerm.set('');
-    this.searchArticleRef.set('');
-    this.searchClientNom.set('');
-    this.searchDateSouhaitee.set('');
-    this.searchDateAjout.set('');
-    this.searchTypeDate.set('souhaitee');
-    this.summary.set(null);
-    this.loadCommandes();
   }
 
   addNewRow() {
@@ -348,8 +428,7 @@ export class CommandeTableComponent implements OnInit {
 
       this.commandeService.createCommande(request).subscribe({
         next: () => {
-          this.loadCommandes();
-          this.loadSummary();
+          this.performSearch();
           this.isLoading.set(false);
         },
         error: (err) => {
@@ -425,8 +504,7 @@ export class CommandeTableComponent implements OnInit {
     this.isLoading.set(true);
     this.commandeService.deleteCommande(cmd.id).subscribe({
       next: () => {
-        this.loadCommandes();
-        this.loadSummary();
+        this.performSearch();
         this.isLoading.set(false);
       },
       error: (err) => {

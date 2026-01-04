@@ -82,18 +82,38 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
             @Param("date") LocalDate date
     );
 
-    // Sommaires pour le total
+    // ✅ NOUVEAU: Recherche par période (date souhaitée)
+    @Query("SELECT c FROM Commande c " +
+            "LEFT JOIN FETCH c.article a " +
+            "LEFT JOIN FETCH c.client cl " +
+            "WHERE a.ref = :articleRef " +
+            "AND c.dateSouhaitee BETWEEN :dateDebut AND :dateFin " +
+            "AND c.isActive = true " +
+            "ORDER BY c.dateSouhaitee DESC")
+    List<Commande> findByArticleRefAndPeriodeSouhaitee(
+            @Param("articleRef") String articleRef,
+            @Param("dateDebut") LocalDate dateDebut,
+            @Param("dateFin") LocalDate dateFin
+    );
+
+    // ✅ NOUVEAU: Recherche par période (date de création)
+    @Query("SELECT c FROM Commande c " +
+            "LEFT JOIN FETCH c.article a " +
+            "LEFT JOIN FETCH c.client cl " +
+            "WHERE a.ref = :articleRef " +
+            "AND DATE(c.createdAt) BETWEEN :dateDebut AND :dateFin " +
+            "AND c.isActive = true " +
+            "ORDER BY c.createdAt DESC")
+    List<Commande> findByArticleRefAndPeriodeAjout(
+            @Param("articleRef") String articleRef,
+            @Param("dateDebut") LocalDate dateDebut,
+            @Param("dateFin") LocalDate dateFin
+    );
+
+    // Sommaires pour le total - uniquement pour article
     @Query("SELECT SUM(c.quantite) FROM Commande c " +
             "WHERE c.article.ref = :articleRef AND c.isActive = true")
     Integer sumQuantiteByArticleRef(@Param("articleRef") String articleRef);
-
-    @Query("SELECT SUM(c.quantite) FROM Commande c " +
-            "WHERE c.dateSouhaitee = :date AND c.isActive = true")
-    Integer sumQuantiteByDateSouhaitee(@Param("date") LocalDate date);
-
-    @Query("SELECT SUM(c.quantite) FROM Commande c " +
-            "WHERE DATE(c.createdAt) = :date AND c.isActive = true")
-    Integer sumQuantiteByDateAjout(@Param("date") LocalDate date);
 
     @Query("SELECT SUM(c.quantite) FROM Commande c " +
             "WHERE c.article.ref = :articleRef " +
@@ -109,5 +129,26 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     Integer sumQuantiteByArticleRefAndDateAjout(
             @Param("articleRef") String articleRef,
             @Param("date") LocalDate date
+    );
+
+    // ✅ NOUVEAU: Sommaires pour les périodes
+    @Query("SELECT SUM(c.quantite) FROM Commande c " +
+            "WHERE c.article.ref = :articleRef " +
+            "AND c.dateSouhaitee BETWEEN :dateDebut AND :dateFin " +
+            "AND c.isActive = true")
+    Integer sumQuantiteByArticleRefAndPeriodeSouhaitee(
+            @Param("articleRef") String articleRef,
+            @Param("dateDebut") LocalDate dateDebut,
+            @Param("dateFin") LocalDate dateFin
+    );
+
+    @Query("SELECT SUM(c.quantite) FROM Commande c " +
+            "WHERE c.article.ref = :articleRef " +
+            "AND DATE(c.createdAt) BETWEEN :dateDebut AND :dateFin " +
+            "AND c.isActive = true")
+    Integer sumQuantiteByArticleRefAndPeriodeAjout(
+            @Param("articleRef") String articleRef,
+            @Param("dateDebut") LocalDate dateDebut,
+            @Param("dateFin") LocalDate dateFin
     );
 }

@@ -117,30 +117,29 @@ public class CommandeService {
                 .collect(Collectors.toList());
     }
 
-    // Sommaires
+    // ✅ NOUVEAU: Recherche par période
+    public List<CommandeResponse> searchByArticleRefAndPeriodeSouhaitee(String articleRef, String dateDebut, String dateFin) {
+        LocalDate debut = LocalDate.parse(dateDebut, DATE_FORMATTER);
+        LocalDate fin = LocalDate.parse(dateFin, DATE_FORMATTER);
+        return commandeRepository.findByArticleRefAndPeriodeSouhaitee(articleRef, debut, fin)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<CommandeResponse> searchByArticleRefAndPeriodeAjout(String articleRef, String dateDebut, String dateFin) {
+        LocalDate debut = LocalDate.parse(dateDebut, DATE_FORMATTER);
+        LocalDate fin = LocalDate.parse(dateFin, DATE_FORMATTER);
+        return commandeRepository.findByArticleRefAndPeriodeAjout(articleRef, debut, fin)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Sommaires - uniquement pour article seul ou article + date/période
     public CommandeSummaryResponse getSummaryByArticleRef(String articleRef) {
         List<Commande> commandes = commandeRepository.findByArticleRef(articleRef);
         Integer total = commandeRepository.sumQuantiteByArticleRef(articleRef);
-        return CommandeSummaryResponse.builder()
-                .totalQuantite(total != null ? total : 0)
-                .nombreCommandes(commandes.size())
-                .build();
-    }
-
-    public CommandeSummaryResponse getSummaryByDateSouhaitee(String date) {
-        LocalDate localDate = LocalDate.parse(date, DATE_FORMATTER);
-        List<Commande> commandes = commandeRepository.findByDateSouhaitee(localDate);
-        Integer total = commandeRepository.sumQuantiteByDateSouhaitee(localDate);
-        return CommandeSummaryResponse.builder()
-                .totalQuantite(total != null ? total : 0)
-                .nombreCommandes(commandes.size())
-                .build();
-    }
-
-    public CommandeSummaryResponse getSummaryByDateAjout(String date) {
-        LocalDate localDate = LocalDate.parse(date, DATE_FORMATTER);
-        List<Commande> commandes = commandeRepository.findByDateAjout(localDate);
-        Integer total = commandeRepository.sumQuantiteByDateAjout(localDate);
         return CommandeSummaryResponse.builder()
                 .totalQuantite(total != null ? total : 0)
                 .nombreCommandes(commandes.size())
@@ -165,6 +164,68 @@ public class CommandeService {
                 .totalQuantite(total != null ? total : 0)
                 .nombreCommandes(commandes.size())
                 .build();
+    }
+
+    // ✅ NOUVEAU: Sommaires pour les périodes
+    public CommandeSummaryResponse getSummaryByArticleRefAndPeriodeSouhaitee(String articleRef, String dateDebut, String dateFin) {
+        LocalDate debut = LocalDate.parse(dateDebut, DATE_FORMATTER);
+        LocalDate fin = LocalDate.parse(dateFin, DATE_FORMATTER);
+        List<Commande> commandes = commandeRepository.findByArticleRefAndPeriodeSouhaitee(articleRef, debut, fin);
+        Integer total = commandeRepository.sumQuantiteByArticleRefAndPeriodeSouhaitee(articleRef, debut, fin);
+        return CommandeSummaryResponse.builder()
+                .totalQuantite(total != null ? total : 0)
+                .nombreCommandes(commandes.size())
+                .build();
+    }
+
+    public CommandeSummaryResponse getSummaryByArticleRefAndPeriodeAjout(String articleRef, String dateDebut, String dateFin) {
+        LocalDate debut = LocalDate.parse(dateDebut, DATE_FORMATTER);
+        LocalDate fin = LocalDate.parse(dateFin, DATE_FORMATTER);
+        List<Commande> commandes = commandeRepository.findByArticleRefAndPeriodeAjout(articleRef, debut, fin);
+        Integer total = commandeRepository.sumQuantiteByArticleRefAndPeriodeAjout(articleRef, debut, fin);
+        return CommandeSummaryResponse.builder()
+                .totalQuantite(total != null ? total : 0)
+                .nombreCommandes(commandes.size())
+                .build();
+    }
+
+    // ✅ NOUVEAU: Méthode pour récupérer les commandes selon les critères d'export
+    public List<CommandeResponse> getCommandesForExport(String articleRef, String dateType,
+                                                        String date, String dateDebut, String dateFin) {
+        // Si on a une période
+        if (articleRef != null && dateDebut != null && dateFin != null) {
+            if ("souhaitee".equals(dateType)) {
+                return searchByArticleRefAndPeriodeSouhaitee(articleRef, dateDebut, dateFin);
+            } else {
+                return searchByArticleRefAndPeriodeAjout(articleRef, dateDebut, dateFin);
+            }
+        }
+
+        // Si on a article + date
+        if (articleRef != null && date != null) {
+            if ("souhaitee".equals(dateType)) {
+                return searchByArticleRefAndDateSouhaitee(articleRef, date);
+            } else {
+                return searchByArticleRefAndDateAjout(articleRef, date);
+            }
+        }
+
+        // Si on a seulement l'article
+        if (articleRef != null) {
+            return searchByArticleRef(articleRef);
+        }
+
+        // Si on a seulement une date
+        if (date != null) {
+            if ("souhaitee".equals(dateType)) {
+                return searchByDateSouhaitee(date);
+            } else {
+                return searchByDateAjout(date);
+            }
+        }
+
+        // Sinon, toutes les commandes
+        return getAllCommandes();
     }
 
     @Transactional

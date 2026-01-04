@@ -3,12 +3,16 @@ package com.eleonetech.app.controller;
 
 import com.eleonetech.app.dto.*;
 import com.eleonetech.app.service.CommandeService;
+import com.eleonetech.app.service.ExcelExportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -19,6 +23,7 @@ import java.util.List;
 public class CommandeController {
 
     private final CommandeService commandeService;
+    private final ExcelExportService excelExportService;
 
     @PostMapping
     public ResponseEntity<?> createCommande(@Valid @RequestBody CreateCommandeRequest request) {
@@ -74,6 +79,25 @@ public class CommandeController {
         return ResponseEntity.ok(commandes);
     }
 
+    // ✅ NOUVEAU: Recherche par période
+    @GetMapping("/search/article/{articleRef}/periode-souhaitee")
+    public ResponseEntity<List<CommandeResponse>> searchByArticleRefAndPeriodeSouhaitee(
+            @PathVariable String articleRef,
+            @RequestParam String dateDebut,
+            @RequestParam String dateFin) {
+        List<CommandeResponse> commandes = commandeService.searchByArticleRefAndPeriodeSouhaitee(articleRef, dateDebut, dateFin);
+        return ResponseEntity.ok(commandes);
+    }
+
+    @GetMapping("/search/article/{articleRef}/periode-ajout")
+    public ResponseEntity<List<CommandeResponse>> searchByArticleRefAndPeriodeAjout(
+            @PathVariable String articleRef,
+            @RequestParam String dateDebut,
+            @RequestParam String dateFin) {
+        List<CommandeResponse> commandes = commandeService.searchByArticleRefAndPeriodeAjout(articleRef, dateDebut, dateFin);
+        return ResponseEntity.ok(commandes);
+    }
+
     @GetMapping("/search/article/{articleRef}/date-souhaitee/{date}")
     public ResponseEntity<List<CommandeResponse>> searchByArticleRefAndDateSouhaitee(
             @PathVariable String articleRef,
@@ -90,22 +114,10 @@ public class CommandeController {
         return ResponseEntity.ok(commandes);
     }
 
-    // Endpoints pour les sommaires
+    // Endpoints pour les sommaires - uniquement pour article seul ou article + date/période
     @GetMapping("/summary/article/{articleRef}")
     public ResponseEntity<CommandeSummaryResponse> getSummaryByArticleRef(@PathVariable String articleRef) {
         CommandeSummaryResponse summary = commandeService.getSummaryByArticleRef(articleRef);
-        return ResponseEntity.ok(summary);
-    }
-
-    @GetMapping("/summary/date-souhaitee/{date}")
-    public ResponseEntity<CommandeSummaryResponse> getSummaryByDateSouhaitee(@PathVariable String date) {
-        CommandeSummaryResponse summary = commandeService.getSummaryByDateSouhaitee(date);
-        return ResponseEntity.ok(summary);
-    }
-
-    @GetMapping("/summary/date-ajout/{date}")
-    public ResponseEntity<CommandeSummaryResponse> getSummaryByDateAjout(@PathVariable String date) {
-        CommandeSummaryResponse summary = commandeService.getSummaryByDateAjout(date);
         return ResponseEntity.ok(summary);
     }
 
@@ -122,6 +134,25 @@ public class CommandeController {
             @PathVariable String articleRef,
             @PathVariable String date) {
         CommandeSummaryResponse summary = commandeService.getSummaryByArticleRefAndDateAjout(articleRef, date);
+        return ResponseEntity.ok(summary);
+    }
+
+    // ✅ NOUVEAU: Sommaires pour les périodes
+    @GetMapping("/summary/article/{articleRef}/periode-souhaitee")
+    public ResponseEntity<CommandeSummaryResponse> getSummaryByArticleRefAndPeriodeSouhaitee(
+            @PathVariable String articleRef,
+            @RequestParam String dateDebut,
+            @RequestParam String dateFin) {
+        CommandeSummaryResponse summary = commandeService.getSummaryByArticleRefAndPeriodeSouhaitee(articleRef, dateDebut, dateFin);
+        return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/summary/article/{articleRef}/periode-ajout")
+    public ResponseEntity<CommandeSummaryResponse> getSummaryByArticleRefAndPeriodeAjout(
+            @PathVariable String articleRef,
+            @RequestParam String dateDebut,
+            @RequestParam String dateFin) {
+        CommandeSummaryResponse summary = commandeService.getSummaryByArticleRefAndPeriodeAjout(articleRef, dateDebut, dateFin);
         return ResponseEntity.ok(summary);
     }
 
@@ -148,6 +179,35 @@ public class CommandeController {
             log.error("Erreur lors de la suppression de la commande: ", e);
             return ResponseEntity.badRequest()
                     .body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    // ✅ NOUVEAU: Export Excel
+    @GetMapping("/export/excel")
+    public ResponseEntity<byte[]> exportToExcel(
+            @RequestParam(required = false) String articleRef,
+            @RequestParam(required = false) String dateType,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String dateDebut,
+            @RequestParam(required = false) String dateFin) {
+        try {
+            List<CommandeResponse> commandes = commandeService.getCommandesForExport(
+                    articleRef, dateType, date, dateDebut, dateFin);
+
+            byte[] excelFile = excelExportService.exportCommandesToExcel(commandes);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment",
+                    "commandes_" + LocalDate.now() + ".xlsx");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(excelFile);
+
+        } catch (Exception e) {
+            log.error("Erreur lors de l'export Excel: ", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 }

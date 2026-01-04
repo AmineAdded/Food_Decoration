@@ -1,6 +1,7 @@
 // backend/src/main/java/com/eleonetech/app/service/ExcelExportService.java
 package com.eleonetech.app.service;
 
+import com.eleonetech.app.dto.CommandeResponse;
 import com.eleonetech.app.dto.ProductionResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -20,6 +21,88 @@ public class ExcelExportService {
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+    // ✅ NOUVEAU: Export pour les Commandes
+    public byte[] exportCommandesToExcel(List<CommandeResponse> commandes) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Commandes");
+
+            // Styles
+            CellStyle headerStyle = createHeaderStyle(workbook);
+            CellStyle dateStyle = createDateStyle(workbook);
+            CellStyle numberStyle = createNumberStyle(workbook);
+            CellStyle borderStyle = createBorderStyle(workbook);
+
+            // Header
+            Row headerRow = sheet.createRow(0);
+            String[] columns = {
+                    "Ref Article",
+                    "Article",
+                    "Client",
+                    "Quantité",
+                    "Date Souhaitée",
+                    "Date de Création"
+            };
+
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columns[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Data
+            int rowNum = 1;
+            for (CommandeResponse commande : commandes) {
+                Row row = sheet.createRow(rowNum++);
+
+                // Ref Article
+                Cell refCell = row.createCell(0);
+                refCell.setCellValue(commande.getArticleRef());
+                refCell.setCellStyle(borderStyle);
+
+                // Article
+                Cell articleCell = row.createCell(1);
+                articleCell.setCellValue(commande.getArticleNom());
+                articleCell.setCellStyle(borderStyle);
+
+                // Client
+                Cell clientCell = row.createCell(2);
+                clientCell.setCellValue(commande.getClientNom());
+                clientCell.setCellStyle(borderStyle);
+
+                // Quantité
+                Cell quantiteCell = row.createCell(3);
+                quantiteCell.setCellValue(commande.getQuantite());
+                quantiteCell.setCellStyle(numberStyle);
+
+                // Date Souhaitée
+                Cell dateSouhaiteeCell = row.createCell(4);
+                LocalDate dateSouhaitee = LocalDate.parse(commande.getDateSouhaitee());
+                dateSouhaiteeCell.setCellValue(dateSouhaitee.format(DATE_FORMATTER));
+                dateSouhaiteeCell.setCellStyle(dateStyle);
+
+                // Date de Création
+                Cell dateCreationCell = row.createCell(5);
+                LocalDate dateCreation = LocalDate.parse(commande.getDateAjout());
+                dateCreationCell.setCellValue(dateCreation.format(DATE_FORMATTER));
+                dateCreationCell.setCellStyle(dateStyle);
+            }
+
+            // Auto-size + padding
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+                sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000);
+            }
+
+            workbook.write(outputStream);
+            log.info("Export Excel généré : {} commandes", commandes.size());
+
+            return outputStream.toByteArray();
+        }
+    }
+
+    // Export pour les Productions (existant)
     public byte[] exportProductionsToExcel(List<ProductionResponse> productions) throws IOException {
 
         try (Workbook workbook = new XSSFWorkbook();

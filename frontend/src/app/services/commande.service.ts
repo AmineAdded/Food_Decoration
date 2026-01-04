@@ -1,13 +1,13 @@
 // frontend/src/app/services/commande.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface CreateCommandeRequest {
   articleRef: string;
   clientNom: string;
   quantite: number;
-  dateSouhaitee: string; // Format: YYYY-MM-DD
+  dateSouhaitee: string;
 }
 
 export interface UpdateCommandeRequest {
@@ -83,17 +83,24 @@ export class CommandeService {
     return this.http.get<CommandeResponse[]>(`${this.apiUrl}/search/article/${articleRef}/date-ajout/${date}`);
   }
 
-  // Sommaires
+  // ✅ NOUVEAU: Recherche par période
+  searchByArticleRefAndPeriodeSouhaitee(articleRef: string, dateDebut: string, dateFin: string): Observable<CommandeResponse[]> {
+    const params = new HttpParams()
+      .set('dateDebut', dateDebut)
+      .set('dateFin', dateFin);
+    return this.http.get<CommandeResponse[]>(`${this.apiUrl}/search/article/${articleRef}/periode-souhaitee`, { params });
+  }
+
+  searchByArticleRefAndPeriodeAjout(articleRef: string, dateDebut: string, dateFin: string): Observable<CommandeResponse[]> {
+    const params = new HttpParams()
+      .set('dateDebut', dateDebut)
+      .set('dateFin', dateFin);
+    return this.http.get<CommandeResponse[]>(`${this.apiUrl}/search/article/${articleRef}/periode-ajout`, { params });
+  }
+
+  // Sommaires - uniquement pour article seul ou article + date/période
   getSummaryByArticleRef(articleRef: string): Observable<CommandeSummaryResponse> {
     return this.http.get<CommandeSummaryResponse>(`${this.apiUrl}/summary/article/${articleRef}`);
-  }
-
-  getSummaryByDateSouhaitee(date: string): Observable<CommandeSummaryResponse> {
-    return this.http.get<CommandeSummaryResponse>(`${this.apiUrl}/summary/date-souhaitee/${date}`);
-  }
-
-  getSummaryByDateAjout(date: string): Observable<CommandeSummaryResponse> {
-    return this.http.get<CommandeSummaryResponse>(`${this.apiUrl}/summary/date-ajout/${date}`);
   }
 
   getSummaryByArticleRefAndDateSouhaitee(articleRef: string, date: string): Observable<CommandeSummaryResponse> {
@@ -104,11 +111,43 @@ export class CommandeService {
     return this.http.get<CommandeSummaryResponse>(`${this.apiUrl}/summary/article/${articleRef}/date-ajout/${date}`);
   }
 
+  // ✅ NOUVEAU: Sommaires pour les périodes
+  getSummaryByArticleRefAndPeriodeSouhaitee(articleRef: string, dateDebut: string, dateFin: string): Observable<CommandeSummaryResponse> {
+    const params = new HttpParams()
+      .set('dateDebut', dateDebut)
+      .set('dateFin', dateFin);
+    return this.http.get<CommandeSummaryResponse>(`${this.apiUrl}/summary/article/${articleRef}/periode-souhaitee`, { params });
+  }
+
+  getSummaryByArticleRefAndPeriodeAjout(articleRef: string, dateDebut: string, dateFin: string): Observable<CommandeSummaryResponse> {
+    const params = new HttpParams()
+      .set('dateDebut', dateDebut)
+      .set('dateFin', dateFin);
+    return this.http.get<CommandeSummaryResponse>(`${this.apiUrl}/summary/article/${articleRef}/periode-ajout`, { params });
+  }
+
   updateCommande(id: number, commande: UpdateCommandeRequest): Observable<CommandeResponse> {
     return this.http.put<CommandeResponse>(`${this.apiUrl}/${id}`, commande);
   }
 
   deleteCommande(id: number): Observable<MessageResponse> {
     return this.http.delete<MessageResponse>(`${this.apiUrl}/${id}`);
+  }
+
+  // ✅ NOUVEAU: Export Excel
+  exportToExcel(articleRef?: string, dateType?: string, date?: string, 
+                dateDebut?: string, dateFin?: string): Observable<Blob> {
+    let params = new HttpParams();
+    
+    if (articleRef) params = params.set('articleRef', articleRef);
+    if (dateType) params = params.set('dateType', dateType);
+    if (date) params = params.set('date', date);
+    if (dateDebut) params = params.set('dateDebut', dateDebut);
+    if (dateFin) params = params.set('dateFin', dateFin);
+    
+    return this.http.get(`${this.apiUrl}/export/excel`, {
+      params: params,
+      responseType: 'blob'
+    });
   }
 }

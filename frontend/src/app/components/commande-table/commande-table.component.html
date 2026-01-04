@@ -10,6 +10,14 @@
         [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)"
       />
+      <button class="export-btn" (click)="exportToExcel()" [disabled]="isLoading()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Exporter Excel
+      </button>
       <button class="add-btn" (click)="addNewRow()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="10" />
@@ -29,7 +37,7 @@
         <select
           class="filter-select"
           [(ngModel)]="searchArticleRef"
-          (ngModelChange)="searchByArticle()"
+          (ngModelChange)="performSearch()"
         >
           <option value="">Tous les articles</option>
           <option *ngFor="let article of availableArticles()" [value]="article.ref">
@@ -57,30 +65,54 @@
         <select
           class="filter-select"
           [ngModel]="searchTypeDate()"
-          (ngModelChange)="searchTypeDate.set($event); searchByDate()"
+          (ngModelChange)="searchTypeDate.set($event); performSearch()"
         >
           <option value="souhaitee">Date souhaitée</option>
           <option value="ajout">Date de création</option>
         </select>
       </div>
 
-      <div class="filter-group" *ngIf="searchTypeDate() === 'souhaitee'">
-        <label>Date souhaitée</label>
+      <div class="filter-group">
+        <label>Mode recherche</label>
+        <select
+          class="filter-select"
+          [ngModel]="searchMode()"
+          (ngModelChange)="searchMode.set($event); searchDate.set(''); searchDateDebut.set(''); searchDateFin.set('')"
+        >
+          <option value="date">Date unique</option>
+          <option value="periode">Période</option>
+        </select>
+      </div>
+
+      <!-- Date unique -->
+      <div class="filter-group" *ngIf="searchMode() === 'date'">
+        <label>Date</label>
         <input
           type="date"
           class="filter-input"
-          [(ngModel)]="searchDateSouhaitee"
-          (ngModelChange)="searchByDate()"
+          [(ngModel)]="searchDate"
+          (ngModelChange)="performSearch()"
         />
       </div>
 
-      <div class="filter-group" *ngIf="searchTypeDate() === 'ajout'">
-        <label>Date de création</label>
+      <!-- Période -->
+      <div class="filter-group" *ngIf="searchMode() === 'periode'">
+        <label>Date début</label>
         <input
           type="date"
           class="filter-input"
-          [(ngModel)]="searchDateAjout"
-          (ngModelChange)="searchByDate()"
+          [(ngModel)]="searchDateDebut"
+          (ngModelChange)="performSearch()"
+        />
+      </div>
+
+      <div class="filter-group" *ngIf="searchMode() === 'periode'">
+        <label>Date fin</label>
+        <input
+          type="date"
+          class="filter-input"
+          [(ngModel)]="searchDateFin"
+          (ngModelChange)="performSearch()"
         />
       </div>
 
@@ -94,7 +126,7 @@
     </div>
   </div>
 
-  <!-- ✅ SOMMAIRE (affiché en haut si filtres actifs) -->
+  <!-- ✅ SOMMAIRE (affiché uniquement si article sélectionné) -->
   <div class="summary-section" *ngIf="summary()">
     <div class="summary-card">
       <div class="summary-icon">
