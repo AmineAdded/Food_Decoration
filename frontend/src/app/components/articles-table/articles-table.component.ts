@@ -89,6 +89,12 @@ export class ArticlesTableComponent implements OnInit {
           isEditing: false,
           isNew: false
         }));
+        // ✅ Trier par date de création décroissante (plus récent en premier)
+        mapped.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0).getTime();
+          const dateB = new Date(b.createdAt || 0).getTime();
+          return dateB - dateA; // Ordre décroissant
+        });
         this.articles.set(mapped);
         this.isLoading.set(false);
       },
@@ -321,7 +327,7 @@ export class ArticlesTableComponent implements OnInit {
   updateClients(articleIndex: number, clients: string[]) {
     const article = this.filteredArticles()[articleIndex];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
-    
+
     this.articles.update(articles => {
       const updated = [...articles];
       updated[realIndex].clients = clients;
@@ -332,7 +338,7 @@ export class ArticlesTableComponent implements OnInit {
   updateProcesses(articleIndex: number, processes: ProcessDetail[]) {
     const article = this.filteredArticles()[articleIndex];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
-    
+
     this.articles.update(articles => {
       const updated = [...articles];
       updated[realIndex].processes = processes;
