@@ -24,13 +24,13 @@ interface ProcessTable extends ProcessResponse {
 export class ProcessTableComponent implements OnInit {
   process = signal<ProcessTable[]>([]);
   searchTerm = signal('');
-  
-  // ✅ NOUVEAU: Filtre avancé
   searchNomProcess = signal('');
-  
-  // ✅ NOUVEAU: Liste déroulante depuis la base
   availableNomProcess = signal<string[]>([]);
-  
+
+  // ✅ PAGINATION
+  currentPage = signal(1);
+  itemsPerPage = 3;
+
   isLoading = signal(false);
   errorMessage = signal('');
 
@@ -44,7 +44,6 @@ export class ProcessTableComponent implements OnInit {
     this.loadDistinctNoms();
   }
 
-  // ✅ NOUVEAU: Charger les noms distincts
   loadDistinctNoms() {
     this.processService.getDistinctNoms().subscribe({
       next: (noms) => {
@@ -66,6 +65,7 @@ export class ProcessTableComponent implements OnInit {
           isNew: false,
         }));
         this.process.set(mapped);
+        this.currentPage.set(1); // ✅ Reset à la page 1
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -76,7 +76,6 @@ export class ProcessTableComponent implements OnInit {
     });
   }
 
-  // ✅ NOUVEAU: Recherche avancée
   performSearch() {
     const nomProcess = this.searchNomProcess();
 
@@ -94,6 +93,7 @@ export class ProcessTableComponent implements OnInit {
           isNew: false,
         }));
         this.process.set(mapped);
+        this.currentPage.set(1); // ✅ Reset à la page 1
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -104,7 +104,6 @@ export class ProcessTableComponent implements OnInit {
     });
   }
 
-  // ✅ NOUVEAU: Réinitialiser les filtres
   resetFilters() {
     this.searchTerm.set('');
     this.searchNomProcess.set('');
@@ -120,6 +119,69 @@ export class ProcessTableComponent implements OnInit {
     );
   });
 
+  // ✅ PAGINATION: Process paginés
+  paginatedProcess = computed(() => {
+    const filtered = this.filteredProcess();
+    const start = (this.currentPage() - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return filtered.slice(start, end);
+  });
+
+  // ✅ PAGINATION: Nombre total de pages
+  totalPages = computed(() => {
+    return Math.ceil(this.filteredProcess().length / this.itemsPerPage);
+  });
+
+  // ✅ PAGINATION: Navigation
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.update(p => p + 1);
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage() > 1) {
+      this.currentPage.update(p => p - 1);
+    }
+  }
+
+  // ✅ PAGINATION: Array de numéros de pages
+  getPageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const pages: number[] = [];
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      } else if (current >= total - 3) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = total - 4; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      }
+    }
+
+    return pages;
+  }
+
   addNewRow() {
     const newProcess: ProcessTable = {
       id: 0 as any,
@@ -133,10 +195,12 @@ export class ProcessTableComponent implements OnInit {
     };
 
     this.process.update((process) => [newProcess, ...process]);
+    this.currentPage.set(1); // ✅ Aller à la première page
   }
 
   editRow(index: number) {
-    const proc = this.process()[index];
+    const proc = this.paginatedProcess()[index];
+    const realIndex = this.process().findIndex(p => p.id === proc.id);
 
     if (!proc.isNew) {
       this.originalProcess[proc.id] = { ...proc };
@@ -145,13 +209,14 @@ export class ProcessTableComponent implements OnInit {
 
     this.process.update((process) => {
       const updated = [...process];
-      updated[index] = { ...updated[index], isEditing: true };
+      updated[realIndex] = { ...updated[realIndex], isEditing: true };
       return updated;
     });
   }
 
   saveRow(index: number) {
-    const proc = this.process()[index];
+    const proc = this.paginatedProcess()[index];
+    const realIndex = this.process().findIndex(p => p.id === proc.id);
 
     if (!proc.nom?.trim()) {
       this.errorMessage.set('Le nom est obligatoire');
@@ -169,6 +234,7 @@ export class ProcessTableComponent implements OnInit {
       this.processService.createProcess(request).subscribe({
         next: () => {
           this.loadProcess();
+          this.loadDistinctNoms();
           this.isLoading.set(false);
         },
         error: (err) => {
@@ -188,7 +254,7 @@ export class ProcessTableComponent implements OnInit {
         next: (response) => {
           this.process.update(process => {
             const updated = [...process];
-            updated[index] = {
+            updated[realIndex] = {
               ...response,
               isEditing: false,
               isNew: false
@@ -197,6 +263,7 @@ export class ProcessTableComponent implements OnInit {
           });
           delete this.originalProcess[proc.id];
           this.editingProcess.delete(proc.id);
+          this.loadDistinctNoms();
           this.isLoading.set(false);
         },
         error: (err) => {
@@ -209,10 +276,11 @@ export class ProcessTableComponent implements OnInit {
   }
 
   cancelEdit(index: number) {
-    const proc = this.process()[index];
+    const proc = this.paginatedProcess()[index];
+    const realIndex = this.process().findIndex(p => p.id === proc.id);
 
     if (proc.isNew) {
-      this.process.update((process) => process.filter((_, i) => i !== index));
+      this.process.update((process) => process.filter((_, i) => i !== realIndex));
       return;
     }
 
@@ -220,7 +288,7 @@ export class ProcessTableComponent implements OnInit {
     if (original) {
       this.process.update((process) => {
         const updated = [...process];
-        updated[index] = { ...original, isEditing: false };
+        updated[realIndex] = { ...original, isEditing: false };
         return updated;
       });
       delete this.originalProcess[proc.id];
@@ -229,10 +297,11 @@ export class ProcessTableComponent implements OnInit {
   }
 
   deleteRow(index: number) {
-    const proc = this.process()[index];
+    const proc = this.paginatedProcess()[index];
+    const realIndex = this.process().findIndex(p => p.id === proc.id);
 
     if (proc.isNew) {
-      this.process.update((process) => process.filter((_, i) => i !== index));
+      this.process.update((process) => process.filter((_, i) => i !== realIndex));
       return;
     }
 
@@ -243,6 +312,7 @@ export class ProcessTableComponent implements OnInit {
     this.processService.deleteProcess(proc.id).subscribe({
       next: () => {
         this.loadProcess();
+        this.loadDistinctNoms();
         this.isLoading.set(false);
       },
       error: (err) => {

@@ -21,7 +21,6 @@
     </div>
   </div>
 
-  <!-- ✅ NOUVEAU: Filtre avancé -->
   <div class="filters-section">
     <div class="filters-row">
       <div class="filter-group">
@@ -48,7 +47,6 @@
     </div>
   </div>
 
-  <!-- Message d'erreur -->
   <div *ngIf="errorMessage()" class="error-message">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
       <circle cx="12" cy="12" r="10" />
@@ -61,8 +59,7 @@
 
   <div class="table-wrapper">
     <div class="process-grid">
-      <!-- HEADER FIXE -->
-      <div class="process-header" *ngIf="filteredProcess().length > 0">
+      <div class="process-header" *ngIf="paginatedProcess().length > 0">
         <table class="process-main-table">
           <thead>
             <tr>
@@ -74,9 +71,8 @@
         </table>
       </div>
 
-      <!-- LIGNES DE DONNÉES -->
       <div
-        *ngFor="let proc of filteredProcess(); let i = index"
+        *ngFor="let proc of paginatedProcess(); let i = index"
         class="process-block"
         [class.editing-block]="isEditing(proc)"
       >
@@ -160,7 +156,15 @@
         </table>
       </div>
 
-      <!-- Empty State -->
+      <div *ngIf="paginatedProcess().length === 0 && filteredProcess().length > 0" class="empty-state">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        <p>Cette page est vide.</p>
+      </div>
+
       <div *ngIf="filteredProcess().length === 0 && process().length > 0" class="empty-state">
         <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="10" />
@@ -176,6 +180,49 @@
           <path d="M12 1v6m0 6v6" />
         </svg>
         <p>Aucun process. Cliquez sur "Ajouter un process" pour commencer.</p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTRÔLES DE PAGINATION -->
+    <div class="pagination-controls" *ngIf="totalPages() > 1">
+      <button
+        class="pagination-btn"
+        (click)="previousPage()"
+        [disabled]="currentPage() === 1"
+        title="Page précédente"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
+      <div class="pagination-numbers">
+        <button
+          *ngFor="let page of getPageNumbers()"
+          [class.active]="page === currentPage()"
+          [class.ellipsis]="page === -1"
+          [disabled]="page === -1"
+          (click)="page !== -1 && goToPage(page)"
+          class="page-number"
+        >
+          {{ page === -1 ? '...' : page }}
+        </button>
+      </div>
+
+      <button
+        class="pagination-btn"
+        (click)="nextPage()"
+        [disabled]="currentPage() === totalPages()"
+        title="Page suivante"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+
+      <div class="pagination-info">
+        Page {{ currentPage() }} sur {{ totalPages() }}
+        ({{ filteredProcess().length }} process)
       </div>
     </div>
   </div>

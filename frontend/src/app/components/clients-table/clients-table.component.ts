@@ -25,15 +25,15 @@ export class ClientsTableComponent implements OnInit {
 
   clients = signal<ClientTable[]>([]);
   searchTerm = signal('');
-  
-  // ✅ NOUVEAU: Filtres avancés
   searchNomComplet = signal('');
   searchModeTransport = signal('');
   searchIncoTerme = signal('');
-  
-  // ✅ NOUVEAU: Listes déroulantes depuis la base
   availableNomComplets = signal<string[]>([]);
-  
+
+  // ✅ PAGINATION
+  currentPage = signal(1);
+  itemsPerPage = 3;
+
   isLoading = signal(false);
   errorMessage = signal('');
 
@@ -51,7 +51,6 @@ export class ClientsTableComponent implements OnInit {
     this.loadDistinctNomComplets();
   }
 
-  // ✅ NOUVEAU: Charger les noms distincts
   loadDistinctNomComplets() {
     this.clientService.getDistinctNomComplets().subscribe({
       next: (noms) => {
@@ -73,6 +72,7 @@ export class ClientsTableComponent implements OnInit {
           isNew: false
         }));
         this.clients.set(mapped);
+        this.currentPage.set(1); // ✅ Reset à la page 1
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -83,7 +83,6 @@ export class ClientsTableComponent implements OnInit {
     });
   }
 
-  // ✅ NOUVEAU: Recherche avancée
   performSearch() {
     const nomComplet = this.searchNomComplet();
     const modeTransport = this.searchModeTransport();
@@ -96,7 +95,6 @@ export class ClientsTableComponent implements OnInit {
 
     this.isLoading.set(true);
 
-    // Priorité: Nom > Mode Transport > Incoterm
     if (nomComplet) {
       this.clientService.searchByNomComplet(nomComplet).subscribe({
         next: (clients) => this.updateClients(clients),
@@ -122,6 +120,7 @@ export class ClientsTableComponent implements OnInit {
       isNew: false
     }));
     this.clients.set(mapped);
+    this.currentPage.set(1); // ✅ Reset à la page 1
     this.isLoading.set(false);
   }
 
@@ -131,7 +130,6 @@ export class ClientsTableComponent implements OnInit {
     this.isLoading.set(false);
   }
 
-  // ✅ NOUVEAU: Réinitialiser les filtres
   resetFilters() {
     this.searchTerm.set('');
     this.searchNomComplet.set('');
@@ -155,6 +153,69 @@ export class ClientsTableComponent implements OnInit {
     );
   });
 
+  // ✅ PAGINATION: Clients paginés
+  paginatedClients = computed(() => {
+    const filtered = this.filteredClients();
+    const start = (this.currentPage() - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return filtered.slice(start, end);
+  });
+
+  // ✅ PAGINATION: Nombre total de pages
+  totalPages = computed(() => {
+    return Math.ceil(this.filteredClients().length / this.itemsPerPage);
+  });
+
+  // ✅ PAGINATION: Navigation
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.update(p => p + 1);
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage() > 1) {
+      this.currentPage.update(p => p - 1);
+    }
+  }
+
+  // ✅ PAGINATION: Array de numéros de pages
+  getPageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const pages: number[] = [];
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      } else if (current >= total - 3) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = total - 4; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      }
+    }
+
+    return pages;
+  }
+
   addNewRow() {
     const newClient: ClientTable = {
       id: 0 as any,
@@ -173,10 +234,12 @@ export class ClientsTableComponent implements OnInit {
     };
 
     this.clients.update(clients => [newClient, ...clients]);
+    this.currentPage.set(1); // ✅ Aller à la première page
   }
 
   editRow(index: number) {
-    const client = this.clients()[index];
+    const client = this.paginatedClients()[index];
+    const realIndex = this.clients().findIndex(c => c.id === client.id);
 
     if (!client.isNew) {
       this.originalClients[client.id] = { ...client };
@@ -185,13 +248,14 @@ export class ClientsTableComponent implements OnInit {
 
     this.clients.update(clients => {
       const updated = [...clients];
-      updated[index] = { ...updated[index], isEditing: true };
+      updated[realIndex] = { ...updated[realIndex], isEditing: true };
       return updated;
     });
   }
 
   saveRow(index: number) {
-    const client = this.clients()[index];
+    const client = this.paginatedClients()[index];
+    const realIndex = this.clients().findIndex(c => c.id === client.id);
 
     if (!client.nomComplet?.trim()) {
       this.errorMessage.set('Le nom complet est obligatoire');
@@ -214,6 +278,7 @@ export class ClientsTableComponent implements OnInit {
       this.clientService.createClient(request).subscribe({
         next: () => {
           this.loadClients();
+          this.loadDistinctNomComplets();
           this.isLoading.set(false);
         },
         error: (err) => {
@@ -238,7 +303,7 @@ export class ClientsTableComponent implements OnInit {
         next: (response) => {
           this.clients.update(clients => {
             const updated = [...clients];
-            updated[index] = {
+            updated[realIndex] = {
               ...response,
               isEditing: false,
               isNew: false
@@ -247,6 +312,7 @@ export class ClientsTableComponent implements OnInit {
           });
           delete this.originalClients[client.id];
           this.editingClients.delete(client.id);
+          this.loadDistinctNomComplets();
           this.isLoading.set(false);
         },
         error: (err) => {
@@ -259,10 +325,11 @@ export class ClientsTableComponent implements OnInit {
   }
 
   cancelEdit(index: number) {
-    const client = this.clients()[index];
+    const client = this.paginatedClients()[index];
+    const realIndex = this.clients().findIndex(c => c.id === client.id);
 
     if (client.isNew) {
-      this.clients.update(clients => clients.filter((_, i) => i !== index));
+      this.clients.update(clients => clients.filter((_, i) => i !== realIndex));
       return;
     }
 
@@ -270,7 +337,7 @@ export class ClientsTableComponent implements OnInit {
     if (original) {
       this.clients.update(clients => {
         const updated = [...clients];
-        updated[index] = { ...original, isEditing: false };
+        updated[realIndex] = { ...original, isEditing: false };
         return updated;
       });
       delete this.originalClients[client.id];
@@ -279,10 +346,11 @@ export class ClientsTableComponent implements OnInit {
   }
 
   deleteRow(index: number) {
-    const client = this.clients()[index];
+    const client = this.paginatedClients()[index];
+    const realIndex = this.clients().findIndex(c => c.id === client.id);
 
     if (client.isNew) {
-      this.clients.update(clients => clients.filter((_, i) => i !== index));
+      this.clients.update(clients => clients.filter((_, i) => i !== realIndex));
       return;
     }
 
@@ -292,6 +360,7 @@ export class ClientsTableComponent implements OnInit {
     this.clientService.deleteClient(client.id).subscribe({
       next: () => {
         this.loadClients();
+        this.loadDistinctNomComplets();
         this.isLoading.set(false);
       },
       error: (err) => {
