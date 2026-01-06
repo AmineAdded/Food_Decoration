@@ -117,7 +117,7 @@
     <!-- Productions en grille -->
     <div class="production-grid">
       <!-- ✅ HEADER FIXE -->
-      <div class="production-header" *ngIf="filteredProductions().length > 0">
+      <div class="production-header" *ngIf="paginatedProductions().length > 0">
         <table class="production-main-table">
           <thead>
             <tr>
@@ -148,9 +148,9 @@
         </table>
       </div>
 
-      <!-- ✅ LIGNES DE DONNÉES -->
+      <!-- ✅ LIGNES DE DONNÉES (PAGINÉES) -->
       <div
-        *ngFor="let prod of filteredProductions(); let i = index"
+        *ngFor="let prod of paginatedProductions(); let i = index"
         class="production-block"
         [class.editing-block]="isEditing(prod)"
       >
@@ -216,7 +216,7 @@
 
               <!-- Stock Actuel -->
               <td class="stock-cell">
-                <span 
+                <span
                   class="stock-badge"
                   [class.stock-high]="prod.stockActuel > 100"
                   [class.stock-medium]="prod.stockActuel > 50 && prod.stockActuel <= 100"
@@ -284,6 +284,15 @@
       </div>
 
       <!-- Empty State -->
+      <div *ngIf="paginatedProductions().length === 0 && filteredProductions().length > 0" class="empty-state">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        <p>Cette page est vide.</p>
+      </div>
+
       <div *ngIf="filteredProductions().length === 0 && productions().length > 0" class="empty-state">
         <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="10" />
@@ -301,6 +310,49 @@
           <line x1="16" y1="17" x2="8" y2="17"/>
         </svg>
         <p>Aucune production. Cliquez sur "Ajouter une production" pour commencer.</p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTRÔLES DE PAGINATION -->
+    <div class="pagination-controls" *ngIf="totalPages() > 1">
+      <button
+        class="pagination-btn"
+        (click)="previousPage()"
+        [disabled]="currentPage() === 1"
+        title="Page précédente"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
+      <div class="pagination-numbers">
+        <button
+          *ngFor="let page of getPageNumbers()"
+          [class.active]="page === currentPage()"
+          [class.ellipsis]="page === -1"
+          [disabled]="page === -1"
+          (click)="page !== -1 && goToPage(page)"
+          class="page-number"
+        >
+          {{ page === -1 ? '...' : page }}
+        </button>
+      </div>
+
+      <button
+        class="pagination-btn"
+        (click)="nextPage()"
+        [disabled]="currentPage() === totalPages()"
+        title="Page suivante"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+
+      <div class="pagination-info">
+        Page {{ currentPage() }} sur {{ totalPages() }}
+        ({{ filteredProductions().length }} production{{ filteredProductions().length > 1 ? 's' : '' }})
       </div>
     </div>
   </div>

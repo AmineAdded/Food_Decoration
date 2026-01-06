@@ -35,8 +35,11 @@ export class ProductionTableComponent implements OnInit {
   searchYear = signal<number | null>(null);
   searchMonth = signal<number | null>(null);
 
-  // ✅ NOUVEAU: État du tri
   sortOrder = signal<SortOrder>(null);
+
+  // ✅ PAGINATION
+  currentPage = signal(1);
+  itemsPerPage = 3;
 
   isLoading = signal(false);
   errorMessage = signal('');
@@ -55,30 +58,30 @@ export class ProductionTableComponent implements OnInit {
   }
 
   loadProductions() {
-  this.isLoading.set(true);
-  this.productionService.getAllProductions().subscribe({
-    next: (productions) => {
-      const mapped: ProductionTable[] = productions.map(p => ({
-        ...p,
-        isEditing: false,
-        isNew: false
-      }));
-      // ✅ Trier par date de création décroissante (plus récent en premier)
-      mapped.sort((a, b) => {
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
-        return dateB - dateA; // Ordre décroissant
-      });
-      this.productions.set(mapped);
-      this.isLoading.set(false);
-    },
-    error: (error) => {
-      console.error(error);
-      this.errorMessage.set('Erreur lors du chargement des productions');
-      this.isLoading.set(false);
-    }
-  });
-}
+    this.isLoading.set(true);
+    this.productionService.getAllProductions().subscribe({
+      next: (productions) => {
+        const mapped: ProductionTable[] = productions.map(p => ({
+          ...p,
+          isEditing: false,
+          isNew: false
+        }));
+        mapped.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0).getTime();
+          const dateB = new Date(b.createdAt || 0).getTime();
+          return dateB - dateA;
+        });
+        this.productions.set(mapped);
+        this.currentPage.set(1); // ✅ Reset à la page 1
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error(error);
+        this.errorMessage.set('Erreur lors du chargement des productions');
+        this.isLoading.set(false);
+      }
+    });
+  }
 
   loadArticles() {
     this.articleService.getAllArticles().subscribe({
@@ -95,20 +98,18 @@ export class ProductionTableComponent implements OnInit {
     });
   }
 
-  // ✅ NOUVEAU: Fonction de tri
   toggleSort() {
     const currentOrder = this.sortOrder();
 
     if (currentOrder === null) {
-      this.sortOrder.set('desc'); // Premier clic: descendant (plus récent d'abord)
+      this.sortOrder.set('desc');
     } else if (currentOrder === 'desc') {
-      this.sortOrder.set('asc'); // Deuxième clic: ascendant (plus ancien d'abord)
+      this.sortOrder.set('asc');
     } else {
-      this.sortOrder.set(null); // Troisième clic: retour à l'ordre par défaut
+      this.sortOrder.set(null);
     }
   }
 
-  // ✅ MODIFIÉ: Recherche avec tri
   filteredProductions = computed(() => {
     let filtered = this.productions();
     const term = this.searchTerm().toLowerCase();
@@ -117,7 +118,6 @@ export class ProductionTableComponent implements OnInit {
     const year = this.searchYear();
     const month = this.searchMonth();
 
-    // Filtre par terme de recherche (ref, nom, quantité)
     if (term) {
       filtered = filtered.filter(p =>
         p.articleRef?.toLowerCase().includes(term) ||
@@ -126,17 +126,14 @@ export class ProductionTableComponent implements OnInit {
       );
     }
 
-    // Filtre par référence d'article
     if (articleRef) {
       filtered = filtered.filter(p => p.articleRef === articleRef);
     }
 
-    // Filtre par date exacte
     if (date) {
       filtered = filtered.filter(p => p.dateProduction === date);
     }
 
-    // Filtre par année
     if (year) {
       filtered = filtered.filter(p => {
         const prodYear = new Date(p.dateProduction).getFullYear();
@@ -144,7 +141,6 @@ export class ProductionTableComponent implements OnInit {
       });
     }
 
-    // Filtre par mois
     if (month) {
       filtered = filtered.filter(p => {
         const prodMonth = new Date(p.dateProduction).getMonth() + 1;
@@ -152,7 +148,6 @@ export class ProductionTableComponent implements OnInit {
       });
     }
 
-    // ✅ NOUVEAU: Appliquer le tri
     const order = this.sortOrder();
     if (order !== null) {
       filtered = [...filtered].sort((a, b) => {
@@ -165,6 +160,69 @@ export class ProductionTableComponent implements OnInit {
 
     return filtered;
   });
+
+  // ✅ PAGINATION: Productions paginées
+  paginatedProductions = computed(() => {
+    const filtered = this.filteredProductions();
+    const start = (this.currentPage() - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return filtered.slice(start, end);
+  });
+
+  // ✅ PAGINATION: Nombre total de pages
+  totalPages = computed(() => {
+    return Math.ceil(this.filteredProductions().length / this.itemsPerPage);
+  });
+
+  // ✅ PAGINATION: Navigation
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.update(p => p + 1);
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage() > 1) {
+      this.currentPage.update(p => p - 1);
+    }
+  }
+
+  // ✅ PAGINATION: Array de numéros de pages
+  getPageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const pages: number[] = [];
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      } else if (current >= total - 3) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = total - 4; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(total);
+      }
+    }
+
+    return pages;
+  }
 
   searchByArticle() {
     const ref = this.searchArticleRef();
@@ -182,6 +240,7 @@ export class ProductionTableComponent implements OnInit {
           isNew: false
         }));
         this.productions.set(mapped);
+        this.currentPage.set(1); // ✅ Reset à la page 1
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -208,6 +267,7 @@ export class ProductionTableComponent implements OnInit {
           isNew: false
         }));
         this.productions.set(mapped);
+        this.currentPage.set(1); // ✅ Reset à la page 1
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -224,7 +284,7 @@ export class ProductionTableComponent implements OnInit {
     this.searchDate.set('');
     this.searchYear.set(null);
     this.searchMonth.set(null);
-    this.sortOrder.set(null); // ✅ Réinitialiser le tri
+    this.sortOrder.set(null);
     this.loadProductions();
   }
 
@@ -245,10 +305,12 @@ export class ProductionTableComponent implements OnInit {
     };
 
     this.productions.update(productions => [newProduction, ...productions]);
+    this.currentPage.set(1); // ✅ Aller à la première page
   }
 
   editRow(index: number) {
-    const prod = this.productions()[index];
+    const prod = this.paginatedProductions()[index];
+    const realIndex = this.productions().findIndex(p => p.id === prod.id);
 
     if (!prod.isNew) {
       this.originalProductions[prod.id] = { ...prod };
@@ -257,13 +319,14 @@ export class ProductionTableComponent implements OnInit {
 
     this.productions.update(productions => {
       const updated = [...productions];
-      updated[index] = { ...updated[index], isEditing: true };
+      updated[realIndex] = { ...updated[realIndex], isEditing: true };
       return updated;
     });
   }
 
   saveRow(index: number) {
-    const prod = this.productions()[index];
+    const prod = this.paginatedProductions()[index];
+    const realIndex = this.productions().findIndex(p => p.id === prod.id);
 
     if (!prod.articleRef?.trim()) {
       this.errorMessage.set('La référence de l\'article est obligatoire');
@@ -312,7 +375,7 @@ export class ProductionTableComponent implements OnInit {
         next: (response) => {
           this.productions.update(productions => {
             const updated = [...productions];
-            updated[index] = {
+            updated[realIndex] = {
               ...response,
               isEditing: false,
               isNew: false
@@ -333,10 +396,11 @@ export class ProductionTableComponent implements OnInit {
   }
 
   cancelEdit(index: number) {
-    const prod = this.productions()[index];
+    const prod = this.paginatedProductions()[index];
+    const realIndex = this.productions().findIndex(p => p.id === prod.id);
 
     if (prod.isNew) {
-      this.productions.update(productions => productions.filter((_, i) => i !== index));
+      this.productions.update(productions => productions.filter((_, i) => i !== realIndex));
       return;
     }
 
@@ -344,7 +408,7 @@ export class ProductionTableComponent implements OnInit {
     if (original) {
       this.productions.update(productions => {
         const updated = [...productions];
-        updated[index] = { ...original, isEditing: false };
+        updated[realIndex] = { ...original, isEditing: false };
         return updated;
       });
       delete this.originalProductions[prod.id];
@@ -353,10 +417,11 @@ export class ProductionTableComponent implements OnInit {
   }
 
   deleteRow(index: number) {
-    const prod = this.productions()[index];
+    const prod = this.paginatedProductions()[index];
+    const realIndex = this.productions().findIndex(p => p.id === prod.id);
 
     if (prod.isNew) {
-      this.productions.update(productions => productions.filter((_, i) => i !== index));
+      this.productions.update(productions => productions.filter((_, i) => i !== realIndex));
       return;
     }
 
