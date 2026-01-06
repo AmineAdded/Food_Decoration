@@ -39,21 +39,23 @@ export class ArticlesTableComponent implements OnInit {
   articles = signal<Article[]>([]);
   availableClients = signal<string[]>([]);
   searchTerm = signal('');
-  
-  // ✅ NOUVEAU: Filtres avancés
+
   searchRef = signal('');
   searchNom = signal('');
   searchFamille = signal('');
   searchTypeProduit = signal('');
   searchTypeProcess = signal('');
-  
-  // ✅ NOUVEAU: Listes déroulantes depuis la base
+
   availableRefs = signal<string[]>([]);
   availableNoms = signal<string[]>([]);
   availableFamilles = signal<string[]>([]);
   availableTypeProduits = signal<string[]>([]);
   availableTypeProcess = signal<string[]>([]);
-  
+
+  // ✅ PAGINATION
+  currentPage = signal(1);
+  itemsPerPage = 3;
+
   isLoading = signal(false);
   errorMessage = signal('');
 
@@ -87,7 +89,6 @@ export class ArticlesTableComponent implements OnInit {
     });
   }
 
-  // ✅ NOUVEAU: Charger les valeurs distinctes pour les listes déroulantes
   loadDistinctValues() {
     this.articleService.getDistinctRefs().subscribe({
       next: (refs) => this.availableRefs.set(refs),
@@ -143,6 +144,7 @@ export class ArticlesTableComponent implements OnInit {
           return dateB - dateA;
         });
         this.articles.set(mapped);
+        this.currentPage.set(1); // ✅ Reset à la page 1
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -153,7 +155,6 @@ export class ArticlesTableComponent implements OnInit {
     });
   }
 
-  // ✅ NOUVEAU: Recherche avancée
   performSearch() {
     const ref = this.searchRef();
     const nom = this.searchNom();
@@ -168,9 +169,8 @@ export class ArticlesTableComponent implements OnInit {
 
     this.isLoading.set(true);
 
-    // Priorité: Ref > Nom > Famille > Type Produit > Type Process
     let searchObservable;
-    
+
     if (ref) {
       searchObservable = this.articleService.searchByRef(ref);
     } else if (nom) {
@@ -204,6 +204,7 @@ export class ArticlesTableComponent implements OnInit {
           isNew: false
         }));
         this.articles.set(mapped);
+        this.currentPage.set(1); // ✅ Reset à la page 1
         this.isLoading.set(false);
       },
       error: (error) => {
@@ -214,7 +215,6 @@ export class ArticlesTableComponent implements OnInit {
     });
   }
 
-  // ✅ NOUVEAU: Réinitialiser les filtres
   resetFilters() {
     this.searchTerm.set('');
     this.searchRef.set('');
@@ -242,6 +242,70 @@ export class ArticlesTableComponent implements OnInit {
     );
   });
 
+  // ✅ PAGINATION: Articles paginés
+  paginatedArticles = computed(() => {
+    const filtered = this.filteredArticles();
+    const start = (this.currentPage() - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return filtered.slice(start, end);
+  });
+
+  // ✅ PAGINATION: Nombre total de pages
+  totalPages = computed(() => {
+    return Math.ceil(this.filteredArticles().length / this.itemsPerPage);
+  });
+
+  // ✅ PAGINATION: Navigation
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.update(p => p + 1);
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage() > 1) {
+      this.currentPage.update(p => p - 1);
+    }
+  }
+
+  // ✅ PAGINATION: Array de numéros de pages
+  getPageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const pages: number[] = [];
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push(-1); // Ellipsis
+        pages.push(total);
+      } else if (current >= total - 3) {
+        pages.push(1);
+        pages.push(-1); // Ellipsis
+        for (let i = total - 4; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1); // Ellipsis
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push(-1); // Ellipsis
+        pages.push(total);
+      }
+    }
+
+    return pages;
+  }
+
+  // Reste des méthodes inchangées...
   onImageSelected(event: Event, index: number) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -258,7 +322,7 @@ export class ArticlesTableComponent implements OnInit {
       return;
     }
 
-    const article = this.filteredArticles()[index];
+    const article = this.paginatedArticles()[index];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
 
     const reader = new FileReader();
@@ -274,7 +338,7 @@ export class ArticlesTableComponent implements OnInit {
   }
 
   removeImage(index: number) {
-    const article = this.filteredArticles()[index];
+    const article = this.paginatedArticles()[index];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
 
     this.articles.update(articles => {
@@ -336,10 +400,11 @@ export class ArticlesTableComponent implements OnInit {
     };
 
     this.articles.update(articles => [newArticle, ...articles]);
+    this.currentPage.set(1); // ✅ Aller à la première page
   }
 
   editRow(index: number) {
-    const article = this.filteredArticles()[index];
+    const article = this.paginatedArticles()[index];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
 
     if (!article.isNew && article.id) {
@@ -355,7 +420,7 @@ export class ArticlesTableComponent implements OnInit {
   }
 
   saveRow(index: number) {
-    const article = this.filteredArticles()[index];
+    const article = this.paginatedArticles()[index];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
 
     if (!article.ref?.trim()) {
@@ -472,7 +537,7 @@ export class ArticlesTableComponent implements OnInit {
   }
 
   cancelEdit(index: number) {
-    const article = this.filteredArticles()[index];
+    const article = this.paginatedArticles()[index];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
 
     if (article.isNew) {
@@ -495,7 +560,7 @@ export class ArticlesTableComponent implements OnInit {
   }
 
   deleteRow(index: number) {
-    const article = this.filteredArticles()[index];
+    const article = this.paginatedArticles()[index];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
 
     if (article.isNew) {
@@ -523,7 +588,7 @@ export class ArticlesTableComponent implements OnInit {
   }
 
   updateClients(articleIndex: number, clients: string[]) {
-    const article = this.filteredArticles()[articleIndex];
+    const article = this.paginatedArticles()[articleIndex];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
 
     this.articles.update(articles => {
@@ -534,7 +599,7 @@ export class ArticlesTableComponent implements OnInit {
   }
 
   updateProcesses(articleIndex: number, processes: ProcessDetail[]) {
-    const article = this.filteredArticles()[articleIndex];
+    const article = this.paginatedArticles()[articleIndex];
     const realIndex = this.articles().findIndex(a => a.id === article.id);
 
     this.articles.update(articles => {

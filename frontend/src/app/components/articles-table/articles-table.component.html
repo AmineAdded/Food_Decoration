@@ -20,7 +20,8 @@
       </button>
     </div>
   </div>
-  <!-- ✅ NOUVEAU: Filtres avancés -->
+
+  <!-- ✅ Filtres avancés -->
   <div class="filters-section">
     <div class="filters-row">
       <div class="filter-group">
@@ -92,20 +93,18 @@
   </div>
 
   <div class="table-wrapper">
-    <!-- Articles en grille -->
+    <!-- Articles en grille - ✅ UTILISE paginatedArticles() -->
     <div class="articles-grid">
       <div
-        *ngFor="let article of filteredArticles(); let i = index"
+        *ngFor="let article of paginatedArticles(); let i = index"
         class="article-block"
         [class.editing-block]="article.isEditing"
       >
         <!-- En-tête des colonnes principales -->
-        <!-- Remplacer le <table class="article-main-table"> par celui-ci -->
         <table class="article-main-table">
           <thead>
             <tr>
               <th>Image</th>
-              <!-- ✅ NOUVELLE COLONNE -->
               <th>Ref</th>
               <th>Article</th>
               <th>Famille</th>
@@ -121,7 +120,7 @@
           </thead>
           <tbody>
             <tr>
-              <!-- ✅ NOUVELLE COLONNE IMAGE -->
+              <!-- ✅ COLONNE IMAGE -->
               <td class="image-cell">
                 <!-- Affichage de l'image -->
                 <div class="image-container" *ngIf="article.imagePreview || article.imageFilename">
@@ -209,7 +208,6 @@
                 />
               </td>
 
-              <!-- ... reste des colonnes inchangé ... -->
               <!-- Famille -->
               <td>
                 <input
@@ -342,7 +340,7 @@
                         <td class="process-value">{{ process.tempsParPF }}</td>
                         <td class="process-value">{{ process.cadenceMax }}</td>
                       </tr>
-                      <!-- ✅ LIGNE TOTAUX -->
+                      <!-- Ligne TOTAUX -->
                       <tr class="process-total-row">
                         <td class="process-total-label">
                           <svg
@@ -436,6 +434,15 @@
       </div>
 
       <!-- Empty State -->
+      <div *ngIf="paginatedArticles().length === 0 && filteredArticles().length > 0" class="empty-state">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        <p>Cette page est vide.</p>
+      </div>
+
       <div *ngIf="filteredArticles().length === 0 && articles().length > 0" class="empty-state">
         <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="10" />
@@ -454,6 +461,49 @@
           <line x1="12" y1="22.08" x2="12" y2="12" />
         </svg>
         <p>Aucun article. Cliquez sur "Ajouter un article" pour commencer.</p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTRÔLES DE PAGINATION -->
+    <div class="pagination-controls" *ngIf="totalPages() > 1">
+      <button
+        class="pagination-btn"
+        (click)="previousPage()"
+        [disabled]="currentPage() === 1"
+        title="Page précédente"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
+      <div class="pagination-numbers">
+        <button
+          *ngFor="let page of getPageNumbers()"
+          [class.active]="page === currentPage()"
+          [class.ellipsis]="page === -1"
+          [disabled]="page === -1"
+          (click)="page !== -1 && goToPage(page)"
+          class="page-number"
+        >
+          {{ page === -1 ? '...' : page }}
+        </button>
+      </div>
+
+      <button
+        class="pagination-btn"
+        (click)="nextPage()"
+        [disabled]="currentPage() === totalPages()"
+        title="Page suivante"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+
+      <div class="pagination-info">
+        Page {{ currentPage() }} sur {{ totalPages() }}
+        ({{ filteredArticles().length }} article{{ filteredArticles().length > 1 ? 's' : '' }})
       </div>
     </div>
   </div>
