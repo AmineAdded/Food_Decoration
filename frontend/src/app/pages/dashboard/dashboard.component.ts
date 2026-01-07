@@ -1,4 +1,4 @@
-// frontend/src/app/pages/dashboard/dashboard.component.ts (MISE À JOUR)
+// frontend/src/app/pages/dashboard/dashboard.component.ts
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,8 +16,6 @@ import { ProcessTableComponent } from '../../components/process-table/process-ta
 import { ProductionTableComponent } from '../../components/production-table/production-table.component';
 import { CommandeTableComponent } from '../../components/commande-table/commande-table.component';
 import { LivraisonTableComponent } from '../../components/livraison-table/livraison-table.component';
-
-
 
 @Component({
   selector: 'app-dashboard',
@@ -44,16 +42,22 @@ import { LivraisonTableComponent } from '../../components/livraison-table/livrai
       <div class="dashboard-content">
         <app-articles-table *ngIf="activeMenu() === 'articles'"></app-articles-table>
         <app-clients-table *ngIf="activeMenu() === 'clients'"></app-clients-table>
-
-        <!-- Process  -->
         <app-process-table *ngIf="activeMenu() === 'process'"></app-process-table>
-
-        <!-- Production - nouvelle section -->
         <app-production-table *ngIf="activeMenu() === 'production'"></app-production-table>
         <app-commande-table *ngIf="activeMenu() === 'commande'"></app-commande-table>
-
         <app-livraison-table *ngIf="activeMenu() === 'livraison'"></app-livraison-table>
 
+        <!-- ✅ NOUVEAU: Carnet de Commande -->
+        <div *ngIf="activeMenu() === 'carnet-commande'" class="coming-soon">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <h2>Carnet de Commande</h2>
+          <p>Cette fonctionnalité est en cours de développement...</p>
+        </div>
       </div>
 
       <!-- Modal Profil (code existant inchangé) -->
@@ -305,11 +309,26 @@ import { LivraisonTableComponent } from '../../components/livraison-table/livrai
         padding: 4rem 2rem;
         text-align: center;
         color: #999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .coming-soon svg {
+        opacity: 0.3;
+        stroke: #c2185b;
       }
 
       .coming-soon h2 {
         font-size: 2rem;
         color: #c2185b;
+        margin: 0;
+      }
+
+      .coming-soon p {
+        font-size: 1.1rem;
+        margin: 0;
       }
 
       /* Modal styles (gardés identiques) */
@@ -576,7 +595,7 @@ import { LivraisonTableComponent } from '../../components/livraison-table/livrai
 export class DashboardComponent implements OnInit {
   currentUser: AuthResponse | null = null;
   showProfileModal = signal(false);
-  activeMenu = signal<'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison'>('articles');
+  activeMenu = signal<'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison' | 'carnet-commande'>('articles');
   activeTab = signal<'info' | 'password'>('info');
   isLoading = signal(false);
   errorMessage = signal('');

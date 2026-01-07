@@ -117,6 +117,65 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
               </button>
             </div>
           </div>
+
+          <div class="nav-divider"></div>
+
+          <!-- ✅ NOUVELLE SECTION ÉTAT -->
+          <div class="nav-group">
+            <span class="group-label">Reporting</span>
+            <div class="nav-items">
+              <div class="dropdown-wrapper">
+                <button
+                  class="nav-item dropdown-btn"
+                  [class.active]="activeMenu() === 'etat-commande' || activeMenu() === 'etat-stock'"
+                  (click)="toggleEtatDropdown()"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                  <span class="nav-text">État</span>
+                  <svg
+                    class="dropdown-icon"
+                    [class.rotated]="showEtatDropdown()"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div class="dropdown-menu" *ngIf="showEtatDropdown()">
+                  <button
+                    class="dropdown-item"
+                    [class.active]="activeMenu() === 'etat-commande'"
+                    (click)="setActiveMenu('etat-commande')"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                      <line x1="3" y1="6" x2="21" y2="6" />
+                    </svg>
+                    État de commande
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    [class.active]="activeMenu() === 'etat-stock'"
+                    (click)="setActiveMenu('etat-stock')"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    </svg>
+                    État de stock
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- User Section -->
@@ -162,8 +221,7 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
       }
 
       .navbar-container {
-        display: grid;
-        grid-template-columns: 280px 1fr 320px;
+        display: flex;
         align-items: center;
         padding: 1.25rem 2rem;
         gap: 2rem;
@@ -176,6 +234,7 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
         display: flex;
         align-items: center;
         gap: 1rem;
+        flex-shrink: 0;
       }
 
       .logo-circle {
@@ -222,6 +281,7 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
         justify-content: center;
         align-items: center;
         gap: 1.5rem;
+        flex: 1;
       }
 
       .nav-group {
@@ -299,12 +359,103 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
         color: white;
       }
 
+      /* ✅ STYLES DROPDOWN */
+      .dropdown-wrapper {
+        position: relative;
+      }
+
+      .dropdown-btn {
+        padding: 0.75rem 0.85rem !important;
+        flex-direction: row !important;
+        gap: 0.5rem !important;
+        min-width: 110px;
+      }
+
+      .dropdown-btn .nav-text {
+        font-size: 0.8rem;
+      }
+
+      .dropdown-icon {
+        transition: transform 0.3s ease;
+        margin-left: 0.25rem;
+      }
+
+      .dropdown-icon.rotated {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        padding: 0.5rem;
+        min-width: 200px;
+        z-index: 1000;
+        animation: slideDown 0.3s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #666;
+        text-align: left;
+      }
+
+      .dropdown-item svg {
+        flex-shrink: 0;
+        color: #666;
+        transition: color 0.3s ease;
+      }
+
+      .dropdown-item:hover {
+        background: #fff0f5;
+        color: #c2185b;
+      }
+
+      .dropdown-item:hover svg {
+        color: #c2185b;
+      }
+
+      .dropdown-item.active {
+        background: linear-gradient(135deg, #e91e63, #f06292);
+        color: white;
+      }
+
+      .dropdown-item.active svg {
+        color: white;
+      }
+
       /* User Section */
       .user-section {
         display: flex;
         align-items: center;
         gap: 1rem;
         justify-content: flex-end;
+        flex-shrink: 0;
       }
 
       .user-info {
@@ -313,20 +464,6 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
         gap: 0.75rem;
         padding-right: 1rem;
         border-right: 2px solid #f0f0f0;
-      }
-
-      .user-avatar {
-        width: 42px;
-        height: 42px;
-        background: linear-gradient(135deg, #9c27b0, #ba68c8);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 0.9rem;
-        box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
       }
 
       .user-details {
@@ -348,12 +485,14 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
 
       .user-actions {
         display: flex;
+        flex-direction: column;
         gap: 0.5rem;
       }
 
       .action-btn {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
         padding: 0.65rem 1.1rem;
         border: none;
@@ -362,6 +501,7 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
         font-weight: 600;
         font-size: 0.85rem;
         transition: all 0.3s ease;
+        white-space: nowrap;
       }
 
       .profile-btn {
@@ -386,10 +526,6 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
 
       /* Responsive Design */
       @media (max-width: 1600px) {
-        .navbar-container {
-          grid-template-columns: 250px 1fr 280px;
-        }
-
         .nav-item {
           padding: 0.65rem 0.85rem;
         }
@@ -401,7 +537,6 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
 
       @media (max-width: 1400px) {
         .navbar-container {
-          grid-template-columns: 220px 1fr 260px;
           gap: 1.5rem;
         }
 
@@ -416,7 +551,7 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
 
       @media (max-width: 1200px) {
         .navbar-container {
-          grid-template-columns: 1fr;
+          flex-wrap: wrap;
           gap: 1rem;
         }
 
@@ -427,6 +562,8 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
         .nav-section {
           flex-wrap: wrap;
           gap: 1rem;
+          width: 100%;
+          justify-content: center;
         }
 
         .nav-divider {
@@ -435,6 +572,7 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
 
         .user-section {
           justify-content: center;
+          width: 100%;
         }
 
         .user-info {
@@ -479,14 +617,15 @@ import { AuthService, AuthResponse } from '../../services/auth.service';
   ],
 })
 export class DashboardNavbarComponent implements OnInit {
-  activeMenu = signal<'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison'>(
+  activeMenu = signal<'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison' | 'etat-commande' | 'etat-stock'>(
     'articles'
   );
+  showEtatDropdown = signal(false);
   currentUser: AuthResponse | null = null;
 
   @Output() profileClick = new EventEmitter<void>();
   @Output() menuChange = new EventEmitter<
-    'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison'
+    'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison' | 'etat-commande' | 'etat-stock'
   >();
 
   constructor(private authService: AuthService, private router: Router) {}
@@ -498,10 +637,19 @@ export class DashboardNavbarComponent implements OnInit {
   }
 
   setActiveMenu(
-    menu: 'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison'
+    menu: 'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison' | 'etat-commande' | 'etat-stock'
   ) {
     this.activeMenu.set(menu);
     this.menuChange.emit(menu);
+
+    // Fermer le dropdown après sélection
+    if (menu === 'etat-commande' || menu === 'etat-stock') {
+      this.showEtatDropdown.set(false);
+    }
+  }
+
+  toggleEtatDropdown() {
+    this.showEtatDropdown.update(v => !v);
   }
 
   openProfile() {
