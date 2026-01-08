@@ -176,30 +176,7 @@
       <canvas #chartCanvas></canvas>
     </div>
   </div>
-
-  <!-- ✅ Graphique mensuel avec champ de saisie pour l'année -->
-  <div class="chart-section monthly-chart-section" *ngIf="!isLoading()">
-    <div class="monthly-chart-header">
-      <h3>Évolution mensuelle des commandes</h3>
-      <div class="year-selector">
-        <label>Année :</label>
-        <input
-          type="number"
-          class="year-select"
-          [ngModel]="monthlyChartYear()"
-          (ngModelChange)="updateMonthlyChartYear($event)"
-          [min]="2000"
-          [max]="2100"
-          placeholder="Ex: 2026"
-        />
-      </div>
-    </div>
-    <div class="chart-wrapper">
-      <canvas #monthlyChartCanvas></canvas>
-    </div>
-  </div>
-
-  <!-- Tableau détaillé -->
+    <!-- Tableau détaillé -->
   <div class="table-section" *ngIf="!isLoading() && clientStats().length > 0">
     <h3>Détails par Client</h3>
     <div class="table-wrapper">
@@ -251,4 +228,27 @@
     <div class="spinner"></div>
     <p>Chargement des données...</p>
   </div>
+
+  <!-- ✅ Graphique mensuel avec champ de saisie pour l'année -->
+  <div class="chart-section monthly-chart-section" *ngIf="!isLoading()">
+    <div class="monthly-chart-header">
+      <h3>Évolution mensuelle des commandes</h3>
+      <div class="year-selector">
+        <label>Année :</label>
+        <input
+          type="number"
+          class="year-select"
+          [ngModel]="monthlyChartYear()"
+          (ngModelChange)="updateMonthlyChartYear($event)"
+          [min]="2000"
+          [max]="2100"
+          placeholder="Ex: 2026"
+        />
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas #monthlyChartCanvas></canvas>
+    </div>
+  </div>
+
 </div>

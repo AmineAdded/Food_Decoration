@@ -185,10 +185,12 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
       setTimeout(() => this.createChart(), 100);
     }
 
-    // Charger le graphique mensuel si les données sont disponibles
-    if (this.allCommandes().length > 0) {
-      setTimeout(() => this.calculateMonthlyData(), 100);
-    }
+    // ✅ Forcer le calcul initial du graphique mensuel
+    setTimeout(() => {
+      if (this.allCommandes().length > 0) {
+        this.calculateMonthlyData();
+      }
+    }, 100);
   }
 
   loadData() {
