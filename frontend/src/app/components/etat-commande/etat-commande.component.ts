@@ -13,8 +13,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CommandeService, CommandeResponse } from '../../services/commande.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
-Chart.register(...registerables);
+Chart.register(...registerables, ChartDataLabels);
 
 type SearchMode = 'month' | 'period';
 type ViewMode = 'client' | 'monthly';
@@ -176,7 +177,12 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   constructor(private commandeService: CommandeService) {
     effect(() => {
       const stats = this.clientStats();
-      if (stats.length > 0 && this.chartInitialized && !this.isLoading() && this.viewMode() === 'client') {
+      if (
+        stats.length > 0 &&
+        this.chartInitialized &&
+        !this.isLoading() &&
+        this.viewMode() === 'client'
+      ) {
         setTimeout(() => this.createChart(), 0);
       }
     });
@@ -188,7 +194,11 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
       const dateDebut = this.monthlyDateDebut();
       const dateFin = this.monthlyDateFin();
 
-      if (this.monthlyChartInitialized && this.allCommandes().length > 0 && this.viewMode() === 'monthly') {
+      if (
+        this.monthlyChartInitialized &&
+        this.allCommandes().length > 0 &&
+        this.viewMode() === 'monthly'
+      ) {
         this.calculateMonthlyData();
       }
     });
@@ -353,8 +363,9 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
         monthIndex = cmdDate.getMonth();
       } else {
         // Calculer l'index du mois dans la période
-        const monthsDiff = (cmdDate.getFullYear() - startDate.getFullYear()) * 12 +
-                          (cmdDate.getMonth() - startDate.getMonth());
+        const monthsDiff =
+          (cmdDate.getFullYear() - startDate.getFullYear()) * 12 +
+          (cmdDate.getMonth() - startDate.getMonth());
         monthIndex = monthsDiff;
       }
 
@@ -476,7 +487,10 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
         label: articleNom,
         data: data,
         backgroundColor: articleColorMap.get(articleNom) || 'rgba(150, 150, 150, 0.7)',
-        borderColor: (articleColorMap.get(articleNom) || 'rgba(150, 150, 150, 0.7)').replace('0.7', '1'),
+        borderColor: (articleColorMap.get(articleNom) || 'rgba(150, 150, 150, 0.7)').replace(
+          '0.7',
+          '1'
+        ),
         borderWidth: 1,
         barThickness: 40,
         maxBarThickness: 60,
@@ -512,6 +526,25 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
               boxWidth: 12,
             },
           },
+          datalabels: {
+            display: function (context: any) {
+              // Afficher la valeur si elle est supérieure à 0
+              return context.dataset.data[context.dataIndex] > 0;
+            },
+            anchor: 'center',
+            align: 'center',
+            formatter: function (value: any, context: any) {
+              // Afficher la valeur de ce segment
+              return value > 0 ? value.toString() : '';
+            },
+            font: {
+              size: 11,
+              weight: 'bold',
+            },
+            color: '#ffffff',
+            textStrokeColor: '#000000',
+            textStrokeWidth: 2,
+          },
           tooltip: {
             callbacks: {
               title: (tooltipItems: any) => {
@@ -544,7 +577,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
               },
               footer: (tooltipItems: any) => {
                 const clientNom = tooltipItems[0].label;
-                const clientStat = stats.find(s => s.clientNom === clientNom);
+                const clientStat = stats.find((s) => s.clientNom === clientNom);
 
                 if (!clientStat) return '';
 
@@ -552,7 +585,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
                   '',
                   `Quantité Ferme totale: ${clientStat.quantiteFerme}`,
                   `Quantité Planifiée totale: ${clientStat.quantitePlanifiee}`,
-                  `Quantité totale: ${clientStat.quantiteTotale}`
+                  `Quantité totale: ${clientStat.quantiteTotale}`,
                 ];
               },
             },
@@ -692,6 +725,25 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
               padding: 10,
               boxWidth: 12,
             },
+          },
+          datalabels: {
+            display: function (context: any) {
+              // Afficher la valeur si elle est supérieure à 0
+              return context.dataset.data[context.dataIndex] > 0;
+            },
+            anchor: 'center',
+            align: 'center',
+            formatter: function (value: any, context: any) {
+              // Afficher la valeur de ce segment
+              return value > 0 ? value.toString() : '';
+            },
+            font: {
+              size: 11,
+              weight: 'bold',
+            },
+            color: '#ffffff',
+            textStrokeColor: '#000000',
+            textStrokeWidth: 2,
           },
           tooltip: {
             callbacks: {
