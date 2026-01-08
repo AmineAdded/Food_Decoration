@@ -17,6 +17,7 @@ import { Chart, ChartConfiguration, registerables } from 'chart.js';
 Chart.register(...registerables);
 
 type SearchMode = 'month' | 'period';
+type ViewMode = 'client' | 'monthly'; // ✅ Nouveau type pour le mode de vue
 
 interface ArticleDetail {
   articleNom: string;
@@ -63,6 +64,9 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   private monthlyChart?: Chart;
   private chartInitialized = false;
   private monthlyChartInitialized = false;
+
+  // ✅ Nouveau signal pour le mode de vue
+  viewMode = signal<ViewMode>('client');
 
   searchMode = signal<SearchMode>('month');
   selectedYear = signal<number>(new Date().getFullYear());
@@ -171,7 +175,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     // Effect pour le graphique par client
     effect(() => {
       const stats = this.clientStats();
-      if (stats.length > 0 && this.chartInitialized && !this.isLoading()) {
+      if (stats.length > 0 && this.chartInitialized && !this.isLoading() && this.viewMode() === 'client') {
         setTimeout(() => this.createChart(), 0);
       }
     });
@@ -179,7 +183,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     // ✅ Effect pour le graphique mensuel
     effect(() => {
       const year = this.monthlyChartYear();
-      if (this.monthlyChartInitialized && this.allCommandes().length > 0) {
+      if (this.monthlyChartInitialized && this.allCommandes().length > 0 && this.viewMode() === 'monthly') {
         this.calculateMonthlyData();
       }
     });
@@ -190,7 +194,9 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.commandeService.getAllCommandes().subscribe({
       next: (commandes) => {
         this.allCommandes.set(commandes);
-        this.calculateMonthlyData();
+        if (this.viewMode() === 'monthly') {
+          this.calculateMonthlyData();
+        }
       },
       error: (error) => {
         console.error('Erreur lors du chargement des commandes:', error);
@@ -204,16 +210,18 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.chartInitialized = true;
     this.monthlyChartInitialized = true;
 
-    if (this.commandes().length > 0) {
+    if (this.commandes().length > 0 && this.viewMode() === 'client') {
       setTimeout(() => this.createChart(), 100);
     }
 
     // ✅ Forcer le calcul initial du graphique mensuel
-    setTimeout(() => {
-      if (this.allCommandes().length > 0) {
-        this.calculateMonthlyData();
-      }
-    }, 100);
+    if (this.viewMode() === 'monthly') {
+      setTimeout(() => {
+        if (this.allCommandes().length > 0) {
+          this.calculateMonthlyData();
+        }
+      }, 100);
+    }
   }
 
   loadData() {
@@ -344,7 +352,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.loadData();
   }
 
-  // ✅ Graphique par client (existant)
+  // ✅ Graphique par client
   private createChart() {
     if (!this.chartCanvas?.nativeElement) {
       return;
@@ -567,18 +575,14 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     const ctx = this.monthlyChartCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
 
-    // Obtenir la liste unique de tous les clients
     const allClients = new Set<string>();
     monthlyStats.forEach((month) => {
       Object.keys(month.clients).forEach((client) => allClients.add(client));
     });
 
     const clientArray = Array.from(allClients);
-
-    // Générer une couleur pour chaque client
     const colors = this.generateColors(clientArray.length);
 
-    // Créer les datasets
     const datasets = clientArray.map((clientNom, index) => ({
       label: clientNom,
       data: monthlyStats.map((month) => month.clients[clientNom]?.quantite || 0),
@@ -688,7 +692,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.monthlyChart = new Chart(ctx, config);
   }
 
-  // ✅ Générer des couleurs distinctes pour chaque client
   private generateColors(count: number): string[] {
     const colors: string[] = [];
     const hueStep = 360 / count;
@@ -703,7 +706,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     return colors;
   }
 
-  // ✅ Mettre à jour l'année du graphique mensuel
   updateMonthlyChartYear(year: number) {
     this.monthlyChartYear.set(year);
   }

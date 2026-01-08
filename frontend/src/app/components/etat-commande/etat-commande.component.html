@@ -1,264 +1,299 @@
 <!-- frontend/src/app/components/etat-commande/etat-commande.component.html -->
 <div class="etat-commande-container">
   <div class="table-header">
-    <h2>État des Commandes par Client</h2>
+    <h2>État des Commandes</h2>
   </div>
 
-  <!-- Filtres -->
-  <div class="filters-section">
-    <div class="filters-row">
-      <div class="filter-group">
-        <label>Mode de recherche</label>
-        <select
-          class="filter-select"
-          [ngModel]="searchMode()"
-          (ngModelChange)="searchMode.set($event)"
-        >
-          <option value="month">Par Mois</option>
-          <option value="period">Par Période</option>
-        </select>
-      </div>
+  <!-- ✅ Sélecteur de mode de vue -->
+  <div class="view-mode-selector">
+    <button
+      [class.active]="viewMode() === 'client'"
+      (click)="viewMode.set('client')"
+      class="view-mode-btn"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+      État des Commandes par Client
+    </button>
+    <button
+      [class.active]="viewMode() === 'monthly'"
+      (click)="viewMode.set('monthly')"
+      class="view-mode-btn"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+      Évolution mensuelle des commandes
+    </button>
+  </div>
 
-      <!-- Filtres pour mode Mois -->
-      <ng-container *ngIf="searchMode() === 'month'">
+  <!-- ✅ Contenu pour "État des Commandes par Client" -->
+  <ng-container *ngIf="viewMode() === 'client'">
+    <!-- Filtres -->
+    <div class="filters-section">
+      <div class="filters-row">
         <div class="filter-group">
-          <label>Année</label>
+          <label>Mode de recherche</label>
           <select
             class="filter-select"
-            [ngModel]="selectedYear()"
-            (ngModelChange)="selectedYear.set($event)"
+            [ngModel]="searchMode()"
+            (ngModelChange)="searchMode.set($event)"
           >
-            <option *ngFor="let year of years()" [value]="year">
-              {{ year }}
-            </option>
+            <option value="month">Par Mois</option>
+            <option value="period">Par Période</option>
           </select>
         </div>
 
-        <div class="filter-group">
-          <label>Mois</label>
-          <select
-            class="filter-select"
-            [ngModel]="selectedMonth()"
-            (ngModelChange)="selectedMonth.set($event)"
-          >
-            <option *ngFor="let month of months" [value]="month.value">
-              {{ month.label }}
-            </option>
-          </select>
-        </div>
-      </ng-container>
+        <!-- Filtres pour mode Mois -->
+        <ng-container *ngIf="searchMode() === 'month'">
+          <div class="filter-group">
+            <label>Année</label>
+            <select
+              class="filter-select"
+              [ngModel]="selectedYear()"
+              (ngModelChange)="selectedYear.set($event)"
+            >
+              <option *ngFor="let year of years()" [value]="year">
+                {{ year }}
+              </option>
+            </select>
+          </div>
 
-      <!-- Filtres pour mode Période -->
-      <ng-container *ngIf="searchMode() === 'period'">
-        <div class="filter-group">
-          <label>Date début</label>
-          <input
-            type="date"
-            class="filter-input"
-            [ngModel]="dateDebut()"
-            (ngModelChange)="dateDebut.set($event)"
-          />
-        </div>
+          <div class="filter-group">
+            <label>Mois</label>
+            <select
+              class="filter-select"
+              [ngModel]="selectedMonth()"
+              (ngModelChange)="selectedMonth.set($event)"
+            >
+              <option *ngFor="let month of months" [value]="month.value">
+                {{ month.label }}
+              </option>
+            </select>
+          </div>
+        </ng-container>
 
-        <div class="filter-group">
-          <label>Date fin</label>
-          <input
-            type="date"
-            class="filter-input"
-            [ngModel]="dateFin()"
-            (ngModelChange)="dateFin.set($event)"
-          />
-        </div>
-      </ng-container>
+        <!-- Filtres pour mode Période -->
+        <ng-container *ngIf="searchMode() === 'period'">
+          <div class="filter-group">
+            <label>Date début</label>
+            <input
+              type="date"
+              class="filter-input"
+              [ngModel]="dateDebut()"
+              (ngModelChange)="dateDebut.set($event)"
+            />
+          </div>
 
-      <div class="filter-buttons">
-        <button class="search-btn" (click)="loadData()" [disabled]="isLoading()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
+          <div class="filter-group">
+            <label>Date fin</label>
+            <input
+              type="date"
+              class="filter-input"
+              [ngModel]="dateFin()"
+              (ngModelChange)="dateFin.set($event)"
+            />
+          </div>
+        </ng-container>
+
+        <div class="filter-buttons">
+          <button class="search-btn" (click)="loadData()" [disabled]="isLoading()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            Rechercher
+          </button>
+
+          <button class="reset-btn" (click)="resetFilters()" [disabled]="isLoading()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="1 4 1 10 7 10" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div *ngIf="errorMessage()" class="error-message">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      {{ errorMessage() }}
+      <button class="close-error" (click)="errorMessage.set('')">×</button>
+    </div>
+
+    <!-- Statistiques globales -->
+    <div class="stats-section" *ngIf="!isLoading() && clientStats().length > 0">
+      <div class="stat-card">
+        <div class="stat-icon purple">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
-          Rechercher
-        </button>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Clients</span>
+          <span class="stat-value">{{ totalStats().nombreClients }}</span>
+        </div>
+      </div>
 
-        <button class="reset-btn" (click)="resetFilters()" [disabled]="isLoading()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <polyline points="1 4 1 10 7 10" />
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
           </svg>
-          Réinitialiser
-        </button>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Commandes</span>
+          <span class="stat-value">{{ totalStats().totalCommandes }}</span>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Message d'erreur -->
-  <div *ngIf="errorMessage()" class="error-message">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-    {{ errorMessage() }}
-    <button class="close-error" (click)="errorMessage.set('')">×</button>
-  </div>
+      <div class="stat-card">
+        <div class="stat-icon pink">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Quantité Totale</span>
+          <span class="stat-value">{{ totalStats().totalQuantite }}</span>
+        </div>
+      </div>
 
-  <!-- Statistiques globales -->
-  <div class="stats-section" *ngIf="!isLoading() && clientStats().length > 0">
-    <div class="stat-card">
-      <div class="stat-icon purple">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Ferme</span>
+          <span class="stat-value">{{ totalStats().totalFerme }}</span>
+        </div>
       </div>
-      <div class="stat-content">
-        <span class="stat-label">Clients</span>
-        <span class="stat-value">{{ totalStats().nombreClients }}</span>
-      </div>
-    </div>
 
-    <div class="stat-card">
-      <div class="stat-icon blue">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-        </svg>
-      </div>
-      <div class="stat-content">
-        <span class="stat-label">Commandes</span>
-        <span class="stat-value">{{ totalStats().totalCommandes }}</span>
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Planifiée</span>
+          <span class="stat-value">{{ totalStats().totalPlanifiee }}</span>
+        </div>
       </div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-icon pink">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-        </svg>
-      </div>
-      <div class="stat-content">
-        <span class="stat-label">Quantité Totale</span>
-        <span class="stat-value">{{ totalStats().totalQuantite }}</span>
+    <!-- Graphique par client -->
+    <div class="chart-section" *ngIf="!isLoading() && clientStats().length > 0">
+      <div class="chart-wrapper">
+        <canvas #chartCanvas></canvas>
       </div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-icon green">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </div>
-      <div class="stat-content">
-        <span class="stat-label">Ferme</span>
-        <span class="stat-value">{{ totalStats().totalFerme }}</span>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div class="stat-icon orange">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-      </div>
-      <div class="stat-content">
-        <span class="stat-label">Planifiée</span>
-        <span class="stat-value">{{ totalStats().totalPlanifiee }}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Graphique par client -->
-  <div class="chart-section" *ngIf="!isLoading() && clientStats().length > 0">
-    <div class="chart-wrapper">
-      <canvas #chartCanvas></canvas>
-    </div>
-  </div>
     <!-- Tableau détaillé -->
-  <div class="table-section" *ngIf="!isLoading() && clientStats().length > 0">
-    <div class="table-section-header">
-      <h3>Détails par Client</h3>
-      <button class="export-btn" (click)="exportData()" [disabled]="isLoading()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-        Exporter Excel
-      </button>
-    </div>
-    <div class="table-wrapper">
-      <table class="details-table">
-        <thead>
-          <tr>
-            <th>Client</th>
-            <th>Quantité Totale</th>
-            <th>Quantité Ferme</th>
-            <th>Quantité Planifiée</th>
-            <th>Nombre de Commandes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let stat of clientStats()">
-            <td class="client-name">{{ stat.clientNom }}</td>
-            <td class="number-cell">{{ stat.quantiteTotale }}</td>
-            <td class="number-cell ferme">{{ stat.quantiteFerme }}</td>
-            <td class="number-cell planifiee">{{ stat.quantitePlanifiee }}</td>
-            <td class="number-cell">{{ stat.nombreCommandes }}</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td><strong>TOTAL</strong></td>
-            <td class="number-cell"><strong>{{ totalStats().totalQuantite }}</strong></td>
-            <td class="number-cell ferme"><strong>{{ totalStats().totalFerme }}</strong></td>
-            <td class="number-cell planifiee"><strong>{{ totalStats().totalPlanifiee }}</strong></td>
-            <td class="number-cell"><strong>{{ totalStats().totalCommandes }}</strong></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-
-  <!-- État vide -->
-  <div *ngIf="!isLoading() && clientStats().length === 0" class="empty-state">
-    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <path d="M16 10a4 4 0 0 1-8 0" />
-    </svg>
-    <h3>Aucune commande trouvée</h3>
-    <p>Il n'y a pas de commandes pour la période sélectionnée.</p>
-  </div>
-
-  <!-- Loading -->
-  <div *ngIf="isLoading()" class="loading-state">
-    <div class="spinner"></div>
-    <p>Chargement des données...</p>
-  </div>
-
-  <!-- ✅ Graphique mensuel avec champ de saisie pour l'année -->
-  <div class="chart-section monthly-chart-section" *ngIf="!isLoading()">
-    <div class="monthly-chart-header">
-      <h3>Évolution mensuelle des commandes</h3>
-      <div class="year-selector">
-        <label>Année :</label>
-        <input
-          type="number"
-          class="year-select"
-          [ngModel]="monthlyChartYear()"
-          (ngModelChange)="updateMonthlyChartYear($event)"
-          [min]="2000"
-          [max]="2100"
-          placeholder="Ex: 2026"
-        />
+    <div class="table-section" *ngIf="!isLoading() && clientStats().length > 0">
+      <div class="table-section-header">
+        <h3>Détails par Client</h3>
+        <button class="export-btn" (click)="exportData()" [disabled]="isLoading()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Exporter Excel
+        </button>
+      </div>
+      <div class="table-wrapper">
+        <table class="details-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Quantité Totale</th>
+              <th>Quantité Ferme</th>
+              <th>Quantité Planifiée</th>
+              <th>Nombre de Commandes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let stat of clientStats()">
+              <td class="client-name">{{ stat.clientNom }}</td>
+              <td class="number-cell">{{ stat.quantiteTotale }}</td>
+              <td class="number-cell ferme">{{ stat.quantiteFerme }}</td>
+              <td class="number-cell planifiee">{{ stat.quantitePlanifiee }}</td>
+              <td class="number-cell">{{ stat.nombreCommandes }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td><strong>TOTAL</strong></td>
+              <td class="number-cell"><strong>{{ totalStats().totalQuantite }}</strong></td>
+              <td class="number-cell ferme"><strong>{{ totalStats().totalFerme }}</strong></td>
+              <td class="number-cell planifiee"><strong>{{ totalStats().totalPlanifiee }}</strong></td>
+              <td class="number-cell"><strong>{{ totalStats().totalCommandes }}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
-    <div class="chart-wrapper">
-      <canvas #monthlyChartCanvas></canvas>
-    </div>
-  </div>
 
+    <!-- État vide -->
+    <div *ngIf="!isLoading() && clientStats().length === 0" class="empty-state">
+      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <path d="M16 10a4 4 0 0 1-8 0" />
+      </svg>
+      <h3>Aucune commande trouvée</h3>
+      <p>Il n'y a pas de commandes pour la période sélectionnée.</p>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Chargement des données...</p>
+    </div>
+  </ng-container>
+
+  <!-- ✅ Contenu pour "Évolution mensuelle des commandes" -->
+  <ng-container *ngIf="viewMode() === 'monthly'">
+    <div class="chart-section monthly-chart-section">
+      <div class="monthly-chart-header">
+        <h3>Évolution mensuelle des commandes</h3>
+        <div class="year-selector">
+          <label>Année :</label>
+          <input
+            type="number"
+            class="year-select"
+            [ngModel]="monthlyChartYear()"
+            (ngModelChange)="updateMonthlyChartYear($event)"
+            [min]="2000"
+            [max]="2100"
+            placeholder="Ex: 2026"
+          />
+        </div>
+      </div>
+      <div class="chart-wrapper">
+        <canvas #monthlyChartCanvas></canvas>
+      </div>
+    </div>
+  </ng-container>
 </div>
