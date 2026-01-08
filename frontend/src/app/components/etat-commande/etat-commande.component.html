@@ -178,7 +178,17 @@
   </div>
     <!-- Tableau détaillé -->
   <div class="table-section" *ngIf="!isLoading() && clientStats().length > 0">
-    <h3>Détails par Client</h3>
+    <div class="table-section-header">
+      <h3>Détails par Client</h3>
+      <button class="export-btn" (click)="exportData()" [disabled]="isLoading()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Exporter Excel
+      </button>
+    </div>
     <div class="table-wrapper">
       <table class="details-table">
         <thead>
