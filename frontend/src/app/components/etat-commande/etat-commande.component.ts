@@ -26,6 +26,18 @@ interface ClientStat {
   articlesPlanifiee: ArticleDetail[];
 }
 
+interface MonthlyData {
+  month: string;
+  clients: {
+    [clientName: string]: {
+      quantite: number;
+      ferme: number;
+      planifiee: number;
+    }
+  };
+  totalQuantite: number;
+}
+
 @Component({
   selector: 'app-etat-commande',
   standalone: true,
@@ -35,15 +47,21 @@ interface ClientStat {
 })
 export class EtatCommandeComponent implements OnInit, AfterViewInit {
   @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('monthlyChartCanvas', { static: false }) monthlyChartCanvas!: ElementRef<HTMLCanvasElement>;
 
   private chart?: Chart;
+  private monthlyChart?: Chart;
   private chartInitialized = false;
+  private monthlyChartInitialized = false;
 
   searchMode = signal<SearchMode>('month');
   selectedYear = signal<number>(new Date().getFullYear());
   selectedMonth = signal<number>(new Date().getMonth() + 1);
   dateDebut = signal<string>('');
   dateFin = signal<string>('');
+
+  // ✅ NOUVEAU: Année pour le graphique mensuel
+  monthlyChartYear = signal<number>(new Date().getFullYear());
 
   commandes = signal<CommandeResponse[]>([]);
   isLoading = signal(false);
@@ -69,6 +87,8 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     { value: 11, label: 'Novembre' },
     { value: 12, label: 'Décembre' }
   ];
+
+  monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
 
   // Statistiques par client
   clientStats = computed(() => {
@@ -107,8 +127,64 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
       }
     });
 
-    // Trier par quantité décroissante
     return Array.from(stats.values()).sort((a, b) => b.quantiteTotale - a.quantiteTotale);
+  });
+
+  // ✅ NOUVEAU: Données mensuelles
+  monthlyData = computed(() => {
+    const year = this.monthlyChartYear();
+    const monthlyStats: MonthlyData[] = [];
+
+    // Initialiser les 12 mois
+    for (let month = 0; month < 12; month++) {
+      monthlyStats.push({
+        month: this.monthNames[month],
+        clients: {},
+        totalQuantite: 0
+      });
+    }
+
+    // Récupérer toutes les commandes
+    this.commandeService.getAllCommandes().subscribe({
+      next: (allCommandes) => {
+        // Filtrer par année
+        const filteredCommandes = allCommandes.filter(cmd => {
+          const cmdDate = new Date(cmd.dateSouhaitee);
+          return cmdDate.getFullYear() === year;
+        });
+
+        // Grouper par mois et par client
+        filteredCommandes.forEach(cmd => {
+          const cmdDate = new Date(cmd.dateSouhaitee);
+          const monthIndex = cmdDate.getMonth();
+          const clientNom = cmd.clientNom;
+
+          if (!monthlyStats[monthIndex].clients[clientNom]) {
+            monthlyStats[monthIndex].clients[clientNom] = {
+              quantite: 0,
+              ferme: 0,
+              planifiee: 0
+            };
+          }
+
+          monthlyStats[monthIndex].clients[clientNom].quantite += cmd.quantite;
+          monthlyStats[monthIndex].totalQuantite += cmd.quantite;
+
+          if (cmd.typeCommande === 'FERME') {
+            monthlyStats[monthIndex].clients[clientNom].ferme += cmd.quantite;
+          } else {
+            monthlyStats[monthIndex].clients[clientNom].planifiee += cmd.quantite;
+          }
+        });
+
+        // Déclencher la création du graphique
+        if (this.monthlyChartInitialized) {
+          setTimeout(() => this.createMonthlyChart(monthlyStats), 0);
+        }
+      }
+    });
+
+    return monthlyStats;
   });
 
   // Statistiques globales
@@ -124,30 +200,38 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   });
 
   constructor(private commandeService: CommandeService) {
-    // Utiliser un effect pour recréer le graphique quand les données changent
+    // Effect pour le graphique par client
     effect(() => {
-      // Déclencher l'effect quand clientStats change
       const stats = this.clientStats();
-
-      // Ne créer le graphique que si on a des données et que la vue est initialisée
       if (stats.length > 0 && this.chartInitialized && !this.isLoading()) {
-        // Utiliser setTimeout pour s'assurer que le DOM est à jour
         setTimeout(() => this.createChart(), 0);
+      }
+    });
+
+    // ✅ Effect pour le graphique mensuel
+    effect(() => {
+      const year = this.monthlyChartYear();
+      if (this.monthlyChartInitialized) {
+        // Déclencher le rechargement des données
+        this.monthlyData();
       }
     });
   }
 
   ngOnInit() {
-    // Charger les données pour le mois en cours par défaut
     this.loadData();
   }
 
   ngAfterViewInit() {
     this.chartInitialized = true;
-    // Créer le graphique initial si on a déjà des données
+    this.monthlyChartInitialized = true;
+
     if (this.commandes().length > 0) {
       setTimeout(() => this.createChart(), 100);
     }
+
+    // Charger les données mensuelles
+    this.monthlyData();
   }
 
   loadData() {
@@ -157,7 +241,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     const mode = this.searchMode();
 
     if (mode === 'month') {
-      // Calculer les dates de début et fin du mois
       const year = this.selectedYear();
       const month = this.selectedMonth();
       const firstDay = new Date(year, month - 1, 1);
@@ -168,7 +251,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
       this.loadCommandesByPeriod(dateDebut, dateFin);
     } else {
-      // Mode période
       const debut = this.dateDebut();
       const fin = this.dateFin();
 
@@ -189,10 +271,8 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   }
 
   private loadCommandesByPeriod(dateDebut: string, dateFin: string) {
-    // Charger toutes les commandes et filtrer par période
     this.commandeService.getAllCommandes().subscribe({
       next: (commandes) => {
-        // Filtrer par date souhaitée (dateSouhaitee)
         const filtered = commandes.filter(cmd => {
           const cmdDate = cmd.dateSouhaitee;
           return cmdDate >= dateDebut && cmdDate <= dateFin;
@@ -200,8 +280,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
         this.commandes.set(filtered);
         this.isLoading.set(false);
-
-        // Le graphique sera recréé automatiquement par l'effect
       },
       error: (error) => {
         console.error('Erreur lors du chargement des commandes:', error);
@@ -232,12 +310,12 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.loadData();
   }
 
+  // ✅ Graphique par client (existant)
   private createChart() {
     if (!this.chartCanvas?.nativeElement) {
       return;
     }
 
-    // Détruire le graphique existant
     if (this.chart) {
       this.chart.destroy();
       this.chart = undefined;
@@ -320,8 +398,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
                 }
 
                 const lines: string[] = ['', '📦 Détails des articles:'];
-
-                // Grouper les articles par nom
                 const groupedArticles = new Map<string, { quantite: number, dates: string[] }>();
 
                 articles.forEach(art => {
@@ -339,18 +415,15 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
                   }
                 });
 
-                // Limiter l'affichage à 5 articles maximum
                 const articlesArray = Array.from(groupedArticles.entries());
                 const maxDisplay = 5;
-                const maxDatesPerArticle = 3; // Limiter aussi le nombre de dates affichées
+                const maxDatesPerArticle = 3;
 
                 articlesArray.slice(0, maxDisplay).forEach(([articleNom, info]) => {
-                  // Tronquer le nom de l'article s'il est trop long
                   const shortName = articleNom.length > 30
                     ? articleNom.substring(0, 27) + '...'
                     : articleNom;
 
-                  // Affichage des dates limitées
                   let datesStr = '';
                   if (info.dates.length <= maxDatesPerArticle) {
                     datesStr = info.dates
@@ -368,7 +441,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
                   lines.push(`    ${datesStr}`);
                 });
 
-                // Si plus de 5 articles, afficher le nombre restant
                 if (articlesArray.length > maxDisplay) {
                   const remaining = articlesArray.length - maxDisplay;
                   lines.push(`  ... et ${remaining} autre${remaining > 1 ? 's' : ''} article${remaining > 1 ? 's' : ''}`);
@@ -447,8 +519,162 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.chart = new Chart(ctx, config);
   }
 
+  // ✅ NOUVEAU: Graphique mensuel
+  private createMonthlyChart(monthlyStats: MonthlyData[]) {
+    if (!this.monthlyChartCanvas?.nativeElement) {
+      return;
+    }
+
+    if (this.monthlyChart) {
+      this.monthlyChart.destroy();
+      this.monthlyChart = undefined;
+    }
+
+    const ctx = this.monthlyChartCanvas.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    // Obtenir la liste unique de tous les clients
+    const allClients = new Set<string>();
+    monthlyStats.forEach(month => {
+      Object.keys(month.clients).forEach(client => allClients.add(client));
+    });
+
+    const clientArray = Array.from(allClients);
+
+    // Générer une couleur pour chaque client
+    const colors = this.generateColors(clientArray.length);
+
+    // Créer les datasets
+    const datasets = clientArray.map((clientNom, index) => ({
+      label: clientNom,
+      data: monthlyStats.map(month => month.clients[clientNom]?.quantite || 0),
+      backgroundColor: colors[index],
+      borderColor: colors[index].replace('0.7', '1'),
+      borderWidth: 1
+    }));
+
+    const config: ChartConfiguration = {
+      type: 'bar',
+      data: {
+        labels: monthlyStats.map(m => m.month),
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: `Quantités commandées par mois - ${this.monthlyChartYear()}`,
+            font: {
+              size: 18,
+              weight: 'bold'
+            },
+            color: '#c2185b'
+          },
+          legend: {
+            position: 'top',
+            labels: {
+              font: {
+                size: 11
+              },
+              padding: 10,
+              boxWidth: 12
+            }
+          },
+          tooltip: {
+            callbacks: {
+              title: (tooltipItems: any) => {
+                return `Mois: ${tooltipItems[0].label}`;
+              },
+              label: (context: any) => {
+                const clientNom = context.dataset.label;
+                const quantite = context.parsed.y;
+                return `${clientNom}: ${quantite}`;
+              },
+              footer: (tooltipItems: any) => {
+                const monthIndex = tooltipItems[0].dataIndex;
+                const total = monthlyStats[monthIndex].totalQuantite;
+                return `\nTotal du mois: ${total}`;
+              }
+            },
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            padding: 12,
+            titleFont: {
+              size: 14,
+              weight: 'bold'
+            },
+            bodyFont: {
+              size: 12
+            },
+            footerFont: {
+              size: 12,
+              weight: 'bold'
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            title: {
+              display: true,
+              text: 'Mois',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            },
+            ticks: {
+              font: {
+                size: 11
+              }
+            }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Quantité',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            },
+            ticks: {
+              font: {
+                size: 12
+              }
+            }
+          }
+        }
+      }
+    };
+
+    this.monthlyChart = new Chart(ctx, config);
+  }
+
+  // ✅ Générer des couleurs distinctes pour chaque client
+  private generateColors(count: number): string[] {
+    const colors: string[] = [];
+    const hueStep = 360 / count;
+
+    for (let i = 0; i < count; i++) {
+      const hue = i * hueStep;
+      const saturation = 70 + (i % 3) * 10;
+      const lightness = 50 + (i % 2) * 10;
+      colors.push(`hsla(${hue}, ${saturation}%, ${lightness}%, 0.7)`);
+    }
+
+    return colors;
+  }
+
+  // ✅ Mettre à jour l'année du graphique mensuel
+  updateMonthlyChartYear(year: number) {
+    this.monthlyChartYear.set(year);
+  }
+
   exportData() {
-    // Export des données (peut être étendu pour exporter le graphique)
     const stats = this.clientStats();
     const total = this.totalStats();
 

@@ -170,10 +170,32 @@
     </div>
   </div>
 
-  <!-- Graphique -->
+  <!-- Graphique par client -->
   <div class="chart-section" *ngIf="!isLoading() && clientStats().length > 0">
     <div class="chart-wrapper">
       <canvas #chartCanvas></canvas>
+    </div>
+  </div>
+
+  <!-- ✅ NOUVEAU: Graphique mensuel -->
+  <div class="chart-section monthly-chart-section" *ngIf="!isLoading()">
+    <div class="monthly-chart-header">
+      <h3>Évolution mensuelle des commandes</h3>
+      <div class="year-selector">
+        <label>Année :</label>
+        <select
+          class="year-select"
+          [ngModel]="monthlyChartYear()"
+          (ngModelChange)="updateMonthlyChartYear($event)"
+        >
+          <option *ngFor="let year of years()" [value]="year">
+            {{ year }}
+          </option>
+        </select>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas #monthlyChartCanvas></canvas>
     </div>
   </div>
 
