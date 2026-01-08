@@ -636,6 +636,11 @@ export class DashboardComponent implements OnInit {
         };
       }
     });
+    // ✅ Restaurer le menu actif depuis localStorage
+    const savedMenu = localStorage.getItem('activeMenu');
+    if (savedMenu) {
+      this.activeMenu.set(savedMenu as any);
+    }
   }
 
   closeProfileModal() {

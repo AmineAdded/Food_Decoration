@@ -634,13 +634,23 @@ export class DashboardNavbarComponent implements OnInit {
     this.authService.currentUser.subscribe((user) => {
       this.currentUser = user;
     });
+    // ✅ Restaurer le menu actif depuis localStorage
+    const savedMenu = localStorage.getItem('activeMenu');
+    if (savedMenu) {
+      const menu = savedMenu as 'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison' | 'etat-commande' | 'etat-stock';
+      this.activeMenu.set(menu);
+      this.menuChange.emit(menu);
+    }
   }
 
-  setActiveMenu(
+   setActiveMenu(
     menu: 'articles' | 'process' | 'clients' | 'production' | 'commande' | 'livraison' | 'etat-commande' | 'etat-stock'
   ) {
     this.activeMenu.set(menu);
     this.menuChange.emit(menu);
+
+    // ✅ Sauvegarder le menu actif dans localStorage
+    localStorage.setItem('activeMenu', menu);
 
     // Fermer le dropdown après sélection
     if (menu === 'etat-commande' || menu === 'etat-stock') {
