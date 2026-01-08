@@ -75,6 +75,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   selectedTypeCommande = signal<'TOUS' | 'FERME' | 'PLANIFIEE'>('TOUS');
 
   monthlyChartYear = signal<number>(new Date().getFullYear());
+  monthlyChartType = signal<'TOUS' | 'FERME' | 'PLANIFIEE'>('TOUS');
 
   commandes = signal<CommandeResponse[]>([]);
   allCommandes = signal<CommandeResponse[]>([]);
@@ -177,6 +178,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
     effect(() => {
       const year = this.monthlyChartYear();
+      const type = this.monthlyChartType();
       if (this.monthlyChartInitialized && this.allCommandes().length > 0 && this.viewMode() === 'monthly') {
         this.calculateMonthlyData();
       }
@@ -280,6 +282,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
   private calculateMonthlyData() {
     const year = this.monthlyChartYear();
+    const typeFilter = this.monthlyChartType();
     const monthlyStats: MonthlyData[] = [];
 
     for (let month = 0; month < 12; month++) {
@@ -292,7 +295,13 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
     const filteredCommandes = this.allCommandes().filter((cmd) => {
       const cmdDate = new Date(cmd.dateSouhaitee);
-      return cmdDate.getFullYear() === year;
+      const yearMatch = cmdDate.getFullYear() === year;
+
+      // Filtre par type de commande
+      if (typeFilter === 'TOUS') {
+        return yearMatch;
+      }
+      return yearMatch && cmd.typeCommande === typeFilter;
     });
 
     filteredCommandes.forEach((cmd) => {
@@ -581,6 +590,14 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
       borderWidth: 1,
     }));
 
+    const typeFilter = this.monthlyChartType();
+    let titleSuffix = '';
+    if (typeFilter === 'FERME') {
+      titleSuffix = ' (Ferme)';
+    } else if (typeFilter === 'PLANIFIEE') {
+      titleSuffix = ' (Planifiée)';
+    }
+
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
@@ -593,7 +610,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
         plugins: {
           title: {
             display: true,
-            text: `Quantités commandées par mois - ${this.monthlyChartYear()}`,
+            text: `Quantités commandées par mois - ${this.monthlyChartYear()}${titleSuffix}`,
             font: {
               size: 18,
               weight: 'bold',
@@ -624,15 +641,21 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
                 const lines = [`${clientNom}:`];
 
-                if (clientData.ferme > 0) {
-                  lines.push(`  • Ferme: ${clientData.ferme}`);
-                }
+                if (typeFilter === 'TOUS') {
+                  if (clientData.ferme > 0) {
+                    lines.push(`  • Ferme: ${clientData.ferme}`);
+                  }
 
-                if (clientData.planifiee > 0) {
-                  lines.push(`  • Planifiée: ${clientData.planifiee}`);
-                }
+                  if (clientData.planifiee > 0) {
+                    lines.push(`  • Planifiée: ${clientData.planifiee}`);
+                  }
 
-                lines.push(`  • Total: ${clientData.quantite}`);
+                  lines.push(`  • Total: ${clientData.quantite}`);
+                } else if (typeFilter === 'FERME') {
+                  lines.push(`  • Ferme: ${clientData.quantite}`);
+                } else if (typeFilter === 'PLANIFIEE') {
+                  lines.push(`  • Planifiée: ${clientData.quantite}`);
+                }
 
                 return lines;
               },
@@ -714,6 +737,10 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
   updateMonthlyChartYear(year: number) {
     this.monthlyChartYear.set(year);
+  }
+
+  updateMonthlyChartType(type: 'TOUS' | 'FERME' | 'PLANIFIEE') {
+    this.monthlyChartType.set(type);
   }
 
   exportData() {

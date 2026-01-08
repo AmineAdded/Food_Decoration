@@ -303,6 +303,17 @@
             [max]="2100"
             placeholder="Ex: 2026"
           />
+          <label style="margin-left: 1rem;">Type :</label>
+          <select
+            class="year-select"
+            [ngModel]="monthlyChartType()"
+            (ngModelChange)="updateMonthlyChartType($event)"
+            style="width: 150px;"
+          >
+            <option value="TOUS">Tous</option>
+            <option value="FERME">Ferme</option>
+            <option value="PLANIFIEE">Planifiée</option>
+          </select>
         </div>
       </div>
       <div class="chart-wrapper">
