@@ -17,7 +17,7 @@ import { Chart, ChartConfiguration, registerables } from 'chart.js';
 Chart.register(...registerables);
 
 type SearchMode = 'month' | 'period';
-type ViewMode = 'client' | 'monthly'; // ✅ Nouveau type pour le mode de vue
+type ViewMode = 'client' | 'monthly';
 
 interface ArticleDetail {
   articleNom: string;
@@ -65,7 +65,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   private chartInitialized = false;
   private monthlyChartInitialized = false;
 
-  // ✅ Nouveau signal pour le mode de vue
   viewMode = signal<ViewMode>('client');
 
   searchMode = signal<SearchMode>('month');
@@ -74,7 +73,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   dateDebut = signal<string>('');
   dateFin = signal<string>('');
 
-  // ✅ Année pour le graphique mensuel
   monthlyChartYear = signal<number>(new Date().getFullYear());
 
   commandes = signal<CommandeResponse[]>([]);
@@ -83,7 +81,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   isLoading = signal(false);
   errorMessage = signal('');
 
-  // Options pour les années (10 dernières années + 5 futures)
   years = computed(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 15 }, (_, i) => currentYear - 10 + i);
@@ -119,7 +116,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     'Déc',
   ];
 
-  // Statistiques par client
   clientStats = computed(() => {
     const stats: Map<string, ClientStat> = new Map();
 
@@ -159,7 +155,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     return Array.from(stats.values()).sort((a, b) => b.quantiteTotale - a.quantiteTotale);
   });
 
-  // Statistiques globales
   totalStats = computed(() => {
     const stats = this.clientStats();
     return {
@@ -172,7 +167,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   });
 
   constructor(private commandeService: CommandeService) {
-    // Effect pour le graphique par client
     effect(() => {
       const stats = this.clientStats();
       if (stats.length > 0 && this.chartInitialized && !this.isLoading() && this.viewMode() === 'client') {
@@ -180,7 +174,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
       }
     });
 
-    // ✅ Effect pour le graphique mensuel
     effect(() => {
       const year = this.monthlyChartYear();
       if (this.monthlyChartInitialized && this.allCommandes().length > 0 && this.viewMode() === 'monthly') {
@@ -190,7 +183,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    // Charger toutes les commandes au démarrage
     this.commandeService.getAllCommandes().subscribe({
       next: (commandes) => {
         this.allCommandes.set(commandes);
@@ -214,7 +206,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
       setTimeout(() => this.createChart(), 100);
     }
 
-    // ✅ Forcer le calcul initial du graphique mensuel
     if (this.viewMode() === 'monthly') {
       setTimeout(() => {
         if (this.allCommandes().length > 0) {
@@ -279,12 +270,10 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // ✅ Calculer les données mensuelles
   private calculateMonthlyData() {
     const year = this.monthlyChartYear();
     const monthlyStats: MonthlyData[] = [];
 
-    // Initialiser les 12 mois
     for (let month = 0; month < 12; month++) {
       monthlyStats.push({
         month: this.monthNames[month],
@@ -293,13 +282,11 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
       });
     }
 
-    // Filtrer par année
     const filteredCommandes = this.allCommandes().filter((cmd) => {
       const cmdDate = new Date(cmd.dateSouhaitee);
       return cmdDate.getFullYear() === year;
     });
 
-    // Grouper par mois et par client
     filteredCommandes.forEach((cmd) => {
       const cmdDate = new Date(cmd.dateSouhaitee);
       const monthIndex = cmdDate.getMonth();
@@ -325,7 +312,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
     this.monthlyData.set(monthlyStats);
 
-    // Créer le graphique
     if (this.monthlyChartInitialized) {
       setTimeout(() => this.createMonthlyChart(monthlyStats), 0);
     }
@@ -352,7 +338,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.loadData();
   }
 
-  // ✅ Graphique par client
   private createChart() {
     if (!this.chartCanvas?.nativeElement) {
       return;
@@ -372,26 +357,61 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
 
+    // Collecter tous les articles uniques et leurs quantités par client
+    const allArticles = new Set<string>();
+    const clientArticleData = new Map<string, Map<string, number>>();
+
+    stats.forEach((clientStat) => {
+      const articleQuantities = new Map<string, number>();
+
+      // Articles FERME
+      clientStat.articlesFerme.forEach((art) => {
+        allArticles.add(art.articleNom);
+        const current = articleQuantities.get(art.articleNom) || 0;
+        articleQuantities.set(art.articleNom, current + art.quantite);
+      });
+
+      // Articles PLANIFIEE
+      clientStat.articlesPlanifiee.forEach((art) => {
+        allArticles.add(art.articleNom);
+        const current = articleQuantities.get(art.articleNom) || 0;
+        articleQuantities.set(art.articleNom, current + art.quantite);
+      });
+
+      clientArticleData.set(clientStat.clientNom, articleQuantities);
+    });
+
+    // Générer des couleurs pour chaque article
+    const uniqueArticles = Array.from(allArticles);
+    const articleColors = this.generateColors(uniqueArticles.length);
+    const articleColorMap = new Map<string, string>();
+    uniqueArticles.forEach((article, index) => {
+      articleColorMap.set(article, articleColors[index]);
+    });
+
+    // Créer les datasets : un dataset par article
+    const datasets = uniqueArticles.map((articleNom) => {
+      const data = stats.map((clientStat) => {
+        const clientArticles = clientArticleData.get(clientStat.clientNom);
+        return clientArticles?.get(articleNom) || 0;
+      });
+
+      return {
+        label: articleNom,
+        data: data,
+        backgroundColor: articleColorMap.get(articleNom) || 'rgba(150, 150, 150, 0.7)',
+        borderColor: (articleColorMap.get(articleNom) || 'rgba(150, 150, 150, 0.7)').replace('0.7', '1'),
+        borderWidth: 1,
+        barThickness: 40,
+        maxBarThickness: 60,
+      };
+    });
+
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
         labels: stats.map((s) => s.clientNom),
-        datasets: [
-          {
-            label: 'Quantité Ferme',
-            data: stats.map((s) => s.quantiteFerme),
-            backgroundColor: 'rgba(46, 125, 50, 0.8)',
-            borderColor: 'rgba(46, 125, 50, 1)',
-            borderWidth: 1,
-          },
-          {
-            label: 'Quantité Planifiée',
-            data: stats.map((s) => s.quantitePlanifiee),
-            backgroundColor: 'rgba(255, 152, 0, 0.8)',
-            borderColor: 'rgba(255, 152, 0, 1)',
-            borderWidth: 1,
-          },
-        ],
+        datasets: datasets,
       },
       options: {
         responsive: true,
@@ -399,7 +419,7 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
         plugins: {
           title: {
             display: true,
-            text: 'Quantités commandées par client',
+            text: 'Articles commandés par client',
             font: {
               size: 18,
               weight: 'bold',
@@ -410,94 +430,31 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
             position: 'top',
             labels: {
               font: {
-                size: 12,
+                size: 11,
               },
-              padding: 15,
+              padding: 10,
+              boxWidth: 12,
             },
           },
           tooltip: {
             callbacks: {
               title: (tooltipItems: any) => {
-                const clientNom = tooltipItems[0].label;
-                return `Client: ${clientNom}`;
+                return `Client: ${tooltipItems[0].label}`;
               },
               label: (context: any) => {
-                const datasetLabel = context.dataset.label || '';
-                const value = context.parsed.y;
-                return `${datasetLabel}: ${value}`;
-              },
-              afterLabel: (context: any) => {
-                const clientIndex = context.dataIndex;
-                const clientStat = stats[clientIndex];
-                const datasetIndex = context.datasetIndex;
+                const articleNom = context.dataset.label;
+                const quantite = context.parsed.y;
 
-                const articles =
-                  datasetIndex === 0 ? clientStat.articlesFerme : clientStat.articlesPlanifiee;
+                if (quantite === 0) return '';
 
-                if (articles.length === 0) {
-                  return '';
-                }
-
-                const lines: string[] = ['', '📦 Détails des articles:'];
-                const groupedArticles = new Map<string, { quantite: number; dates: string[] }>();
-
-                articles.forEach((art) => {
-                  const existing = groupedArticles.get(art.articleNom);
-                  if (existing) {
-                    existing.quantite += art.quantite;
-                    if (!existing.dates.includes(art.dateSouhaitee)) {
-                      existing.dates.push(art.dateSouhaitee);
-                    }
-                  } else {
-                    groupedArticles.set(art.articleNom, {
-                      quantite: art.quantite,
-                      dates: [art.dateSouhaitee],
-                    });
-                  }
-                });
-
-                const articlesArray = Array.from(groupedArticles.entries());
-                const maxDisplay = 5;
-                const maxDatesPerArticle = 3;
-
-                articlesArray.slice(0, maxDisplay).forEach(([articleNom, info]) => {
-                  const shortName =
-                    articleNom.length > 30 ? articleNom.substring(0, 27) + '...' : articleNom;
-
-                  let datesStr = '';
-                  if (info.dates.length <= maxDatesPerArticle) {
-                    datesStr = info.dates.map((d) => this.formatDateForDisplay(d)).join(', ');
-                  } else {
-                    const displayedDates = info.dates
-                      .slice(0, maxDatesPerArticle)
-                      .map((d) => this.formatDateForDisplay(d))
-                      .join(', ');
-                    datesStr = `${displayedDates} +${info.dates.length - maxDatesPerArticle}`;
-                  }
-
-                  lines.push(`  • ${shortName} (${info.quantite})`);
-                  lines.push(`    ${datesStr}`);
-                });
-
-                if (articlesArray.length > maxDisplay) {
-                  const remaining = articlesArray.length - maxDisplay;
-                  lines.push(
-                    `  ... et ${remaining} autre${remaining > 1 ? 's' : ''} article${
-                      remaining > 1 ? 's' : ''
-                    }`
-                  );
-                }
-
-                return lines;
+                return `${articleNom}: ${quantite}`;
               },
               footer: (tooltipItems: any) => {
                 let total = 0;
                 tooltipItems.forEach((item: any) => {
-                  if (item.parsed && item.parsed.y !== null) {
-                    total += item.parsed.y;
-                  }
+                  total += item.parsed.y;
                 });
-                return `\nTotal pour ce type: ${total}`;
+                return `\nQuantité totale: ${total}`;
               },
             },
             backgroundColor: 'rgba(0, 0, 0, 0.9)',
@@ -513,9 +470,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
               size: 12,
               weight: 'bold',
             },
-            displayColors: true,
-            boxWidth: 10,
-            boxHeight: 10,
           },
         },
         scales: {
@@ -561,7 +515,6 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.chart = new Chart(ctx, config);
   }
 
-  // ✅ Graphique mensuel
   private createMonthlyChart(monthlyStats: MonthlyData[]) {
     if (!this.monthlyChartCanvas?.nativeElement) {
       return;

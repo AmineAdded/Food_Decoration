@@ -4,7 +4,7 @@
     <h2>État des Commandes</h2>
   </div>
 
-  <!-- ✅ Sélecteur de mode de vue -->
+  <!-- Sélecteur de mode de vue -->
   <div class="view-mode-selector">
     <button
       [class.active]="viewMode() === 'client'"
@@ -34,7 +34,7 @@
     </button>
   </div>
 
-  <!-- ✅ Contenu pour "État des Commandes par Client" -->
+  <!-- Contenu pour "État des Commandes par Client" -->
   <ng-container *ngIf="viewMode() === 'client'">
     <!-- Filtres -->
     <div class="filters-section">
@@ -273,7 +273,7 @@
     </div>
   </ng-container>
 
-  <!-- ✅ Contenu pour "Évolution mensuelle des commandes" -->
+  <!-- Contenu pour "Évolution mensuelle des commandes" -->
   <ng-container *ngIf="viewMode() === 'monthly'">
     <div class="chart-section monthly-chart-section">
       <div class="monthly-chart-header">
