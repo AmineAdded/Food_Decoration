@@ -32,7 +32,7 @@
       <div class="filter-group" *ngIf="searchMode() === 'month'">
         <label>Mois</label>
         <select class="filter-select" [(ngModel)]="selectedMonth" (ngModelChange)="onFilterChange()">
-          <option *ngFor="let month of months" [value]="month.value">
+          <option *ngFor="let month of months" [ngValue]="month.value">
             {{ month.label }}
           </option>
         </select>
