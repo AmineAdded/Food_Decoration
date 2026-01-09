@@ -340,7 +340,9 @@
                         <td class="process-value">{{ process.tempsParPF }}</td>
                         <td class="process-value">{{ process.cadenceMax }}</td>
                       </tr>
-                      <!-- Ligne TOTAUX -->
+                    </tbody>
+                    <!-- ✅ Ligne TOTAUX dans tfoot pour qu'elle reste visible -->
+                    <tfoot>
                       <tr class="process-total-row">
                         <td class="process-total-label">
                           <svg
@@ -364,7 +366,7 @@
                           <span *ngIf="!calculateBottleneck(article.processes)">-</span>
                         </td>
                       </tr>
-                    </tbody>
+                    </tfoot>
                   </table>
                 </div>
               </div>

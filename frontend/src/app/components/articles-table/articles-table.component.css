@@ -307,8 +307,8 @@
 
 .process-scroll {
   width: 100%;
-  max-height: 300px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .process-scroll::-webkit-scrollbar {
@@ -329,14 +329,20 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .process-table thead {
   background: linear-gradient(135deg, #2196F3, #42A5F5);
   color: white;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.process-table thead tr {
+  display: table-row;
 }
 
 .process-table th {
@@ -345,9 +351,35 @@
   font-weight: 600;
   font-size: 0.8rem;
   white-space: nowrap;
+  display: table-cell;
+}
+
+/* Conteneur scrollable pour les lignes du tbody (max 4 lignes visibles) */
+.process-table tbody {
+  display: block;
+  max-height: 160px; /* 4 lignes * ~40px par ligne */
+  overflow-y: auto;
+  width: 100%;
+}
+
+.process-table tbody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.process-table tbody::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.process-table tbody::-webkit-scrollbar-thumb {
+  background: #2196F3;
+  border-radius: 3px;
 }
 
 .process-table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
   border-bottom: 1px solid #E0E0E0;
   transition: background 0.2s ease;
 }
@@ -358,6 +390,7 @@
 
 .process-table td {
   padding: 0.6rem 0.75rem;
+  display: table-cell;
 }
 
 .process-name {
@@ -370,15 +403,21 @@
   text-align: right;
 }
 
-/* Ligne des totaux */
-.process-total-row {
-  background: linear-gradient(135deg, #E3F2FD, #BBDEFB) !important;
-  font-weight: 700;
-  border-top: 2px solid #2196F3 !important;
+/* Ligne des totaux - toujours visible en bas */
+.process-table tfoot {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-top: 2px solid #2196F3;
+  background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
 }
 
-.process-total-row:hover {
-  background: linear-gradient(135deg, #E3F2FD, #BBDEFB) !important;
+.process-table tfoot tr {
+  display: table-row;
+}
+
+.process-total-row {
+  font-weight: 700;
 }
 
 .process-total-label {
@@ -387,6 +426,7 @@
   gap: 0.5rem;
   color: #1976D2;
   font-weight: 700;
+  padding: 0.6rem 0.75rem;
 }
 
 .process-total-label svg {
@@ -399,6 +439,7 @@
   color: #1976D2;
   font-weight: 700;
   font-size: 0.9rem;
+  padding: 0.6rem 0.75rem;
 }
 
 .bottleneck {
