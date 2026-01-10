@@ -241,7 +241,7 @@ export class TauxChargeComponent implements OnInit, AfterViewInit {
           datalabels: {
             anchor: 'end',
             align: 'top',
-            formatter: (value) => value.toFixed(2) + '%',
+            formatter: (value) => value.toFixed(0) + '%',
             font: { size: 12, weight: 'bold' },
             color: '#333',
           },
@@ -404,7 +404,7 @@ export class TauxChargeComponent implements OnInit, AfterViewInit {
 
   exportToExcel() {
     const data = this.chargeData();
-    
+
     if (data.length === 0) {
       console.warn('⚠️ Aucune donnée à exporter');
       return;
@@ -413,12 +413,12 @@ export class TauxChargeComponent implements OnInit, AfterViewInit {
     const periode = this.getPeriodLabel();
     const heuresDisponibles = this.heuresDisponibles();
 
-    const exportData = data.map(item => ({
+    const exportData = data.map((item) => ({
       processNom: item.processNom,
       tempsNecessaire: item.tempsNecessaire,
       heuresDisponibles: heuresDisponibles,
       tauxCharge: item.tauxCharge,
-      statut: this.getStatutLabel(item.tauxCharge)
+      statut: this.getStatutLabel(item.tauxCharge),
     }));
 
     this.exportService.exportToExcel(exportData, periode, heuresDisponibles);
