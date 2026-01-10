@@ -427,6 +427,8 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
     this.calculateMonthlyData();
   }
 
+  // Modification de la méthode createChart() dans etat-commande.component.ts
+
   private createChart() {
     if (!this.chartCanvas?.nativeElement) {
       return;
@@ -497,6 +499,9 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
       };
     });
 
+    // ✅ Récupérer le filtre de type de commande actuel
+    const typeFilter = this.selectedTypeCommande();
+
     const config: ChartConfiguration = {
       type: 'bar',
       data: {
@@ -528,13 +533,11 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
           },
           datalabels: {
             display: function (context: any) {
-              // Afficher la valeur si elle est supérieure à 0
               return context.dataset.data[context.dataIndex] > 0;
             },
             anchor: 'center',
             align: 'center',
             formatter: function (value: any, context: any) {
-              // Afficher la valeur de ce segment
               return value > 0 ? value.toString() : '';
             },
             font: {
@@ -562,16 +565,28 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
                 const lines = [`${articleNom}:`];
 
-                if (articleData.ferme > 0) {
-                  lines.push(`  • Ferme: ${articleData.ferme}`);
+                // ✅ Logique conditionnelle basée sur le filtre
+                if (typeFilter === 'TOUS') {
+                  // Afficher les deux types si le filtre est "TOUS"
+                  if (articleData.ferme > 0) {
+                    lines.push(`  • Ferme: ${articleData.ferme}`);
+                  }
+                  if (articleData.planifiee > 0) {
+                    lines.push(`  • Planifiée: ${articleData.planifiee}`);
+                  }
+                  const total = articleData.ferme + articleData.planifiee;
+                  lines.push(`  • Total: ${total}`);
+                } else if (typeFilter === 'FERME') {
+                  // Afficher uniquement Ferme
+                  if (articleData.ferme > 0) {
+                    lines.push(`  • Ferme: ${articleData.ferme}`);
+                  }
+                } else if (typeFilter === 'PLANIFIEE') {
+                  // Afficher uniquement Planifiée
+                  if (articleData.planifiee > 0) {
+                    lines.push(`  • Planifiée: ${articleData.planifiee}`);
+                  }
                 }
-
-                if (articleData.planifiee > 0) {
-                  lines.push(`  • Planifiée: ${articleData.planifiee}`);
-                }
-
-                const total = articleData.ferme + articleData.planifiee;
-                lines.push(`  • Total: ${total}`);
 
                 return lines;
               },
@@ -581,12 +596,20 @@ export class EtatCommandeComponent implements OnInit, AfterViewInit {
 
                 if (!clientStat) return '';
 
-                return [
-                  '',
-                  `Quantité Ferme totale: ${clientStat.quantiteFerme}`,
-                  `Quantité Planifiée totale: ${clientStat.quantitePlanifiee}`,
-                  `Quantité totale: ${clientStat.quantiteTotale}`,
-                ];
+                const footerLines: string[] = [''];
+
+                // ✅ Logique conditionnelle pour le footer
+                if (typeFilter === 'TOUS') {
+                  footerLines.push(`Quantité Ferme totale: ${clientStat.quantiteFerme}`);
+                  footerLines.push(`Quantité Planifiée totale: ${clientStat.quantitePlanifiee}`);
+                  footerLines.push(`Quantité totale: ${clientStat.quantiteTotale}`);
+                } else if (typeFilter === 'FERME') {
+                  footerLines.push(`Quantité Ferme totale: ${clientStat.quantiteFerme}`);
+                } else if (typeFilter === 'PLANIFIEE') {
+                  footerLines.push(`Quantité Planifiée totale: ${clientStat.quantitePlanifiee}`);
+                }
+
+                return footerLines;
               },
             },
             backgroundColor: 'rgba(0, 0, 0, 0.9)',
