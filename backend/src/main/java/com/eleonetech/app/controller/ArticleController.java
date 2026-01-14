@@ -43,7 +43,7 @@ public class ArticleController {
     // backend/src/main/java/com/eleonetech/app/controller/ArticleController.java
     @PostMapping("/{id}/image")
     public ResponseEntity<?> uploadImage(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam("image") MultipartFile file) {
         try {
             log.info("📤 Upload image pour article ID: {}", id);
@@ -99,7 +99,7 @@ public class ArticleController {
 
     // ✅ NOUVEAU: Suppression d'image
     @DeleteMapping("/{id}/image")
-    public ResponseEntity<?> deleteImage(@PathVariable Long id) {
+    public ResponseEntity<?> deleteImage(@PathVariable String id) {
         try {
             articleService.deleteArticleImage(id);
             return ResponseEntity.ok(new MessageResponse("Image supprimée avec succès"));
@@ -117,7 +117,7 @@ public class ArticleController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getArticleById(@PathVariable Long id) {
+    public ResponseEntity<?> getArticleById(@PathVariable String id) {
         try {
             ArticleResponse response = articleService.getArticleById(id);
             return ResponseEntity.ok(response);
@@ -130,7 +130,7 @@ public class ArticleController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateArticle(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateArticleRequest request) {
         try {
             ArticleResponse response = articleService.updateArticle(id, request);
@@ -143,7 +143,7 @@ public class ArticleController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteArticle(@PathVariable Long id) {
+    public ResponseEntity<?> deleteArticle(@PathVariable String id) {
         try {
             articleService.deleteArticle(id);
             return ResponseEntity.ok(new MessageResponse("Article supprimé avec succès"));

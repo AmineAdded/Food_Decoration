@@ -44,7 +44,7 @@ public class ProcessController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProcessById(@PathVariable Long id) {
+    public ResponseEntity<?> getProcessById(@PathVariable String id) {
         try {
             ProcessResponse response = processService.getProcessById(id);
             return ResponseEntity.ok(response);
@@ -57,7 +57,7 @@ public class ProcessController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProcess(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateProcessRequest request) {
         try {
             ProcessResponse response = processService.updateProcess(id, request);
@@ -70,7 +70,7 @@ public class ProcessController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProcess(@PathVariable Long id) {
+    public ResponseEntity<?> deleteProcess(@PathVariable String id) {
         try {
             processService.deleteProcess(id);
             return ResponseEntity.ok(new MessageResponse("Process supprimé avec succès"));

@@ -1,222 +1,46 @@
-// backend/src/main/java/com/eleonetech/app/repository/CommandeRepository.java
 package com.eleonetech.app.repository;
 
 import com.eleonetech.app.entity.Commande;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public interface CommandeRepository extends JpaRepository<Commande, Long> {
+public interface CommandeRepository extends MongoRepository<Commande, String> {
 
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE c.isActive = true " +
-            "ORDER BY c.dateSouhaitee DESC, c.id DESC")
+    // ✅ Requêtes corrigées - utilisent maintenant articleRef et clientNom directement
+
+    @Query(value = "{'isActive': true}", sort = "{'dateSouhaitee': -1, 'id': -1}")
     List<Commande> findAllActiveWithDetails();
 
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE c.id = :id")
-    Commande findByIdWithDetails(@Param("id") Long id);
+    @Query("{'articleRef': ?0, 'isActive': true}")
+    List<Commande> findByArticleRef(String articleRef);
 
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE a.ref = :articleRef " +
-            "AND c.isActive = true " +
-            "ORDER BY c.dateSouhaitee DESC")
-    List<Commande> findByArticleRef(@Param("articleRef") String articleRef);
+    @Query("{'clientNom': ?0, 'isActive': true}")
+    List<Commande> findByClientNom(String clientNom);
 
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE cl.nomComplet = :clientNom " +
-            "AND c.isActive = true " +
-            "ORDER BY c.dateSouhaitee DESC")
-    List<Commande> findByClientNom(@Param("clientNom") String clientNom);
+    @Query("{'dateSouhaitee': ?0, 'isActive': true}")
+    List<Commande> findByDateSouhaitee(LocalDate date);
 
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE c.dateSouhaitee = :date " +
-            "AND c.isActive = true " +
-            "ORDER BY c.id DESC")
-    List<Commande> findByDateSouhaitee(@Param("date") LocalDate date);
+    @Query("{'articleRef': ?0, 'dateSouhaitee': ?1, 'isActive': true}")
+    List<Commande> findByArticleRefAndDateSouhaitee(String articleRef, LocalDate date);
 
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE DATE(c.createdAt) = :date " +
-            "AND c.isActive = true " +
-            "ORDER BY c.id DESC")
-    List<Commande> findByDateAjout(@Param("date") LocalDate date);
+    @Query("{'articleRef': ?0, 'dateSouhaitee': {$gte: ?1, $lte: ?2}, 'isActive': true}")
+    List<Commande> findByArticleRefAndPeriodeSouhaitee(String articleRef, LocalDate dateDebut, LocalDate dateFin);
 
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE a.ref = :articleRef " +
-            "AND c.dateSouhaitee = :date " +
-            "AND c.isActive = true " +
-            "ORDER BY c.id DESC")
-    List<Commande> findByArticleRefAndDateSouhaitee(
-            @Param("articleRef") String articleRef,
-            @Param("date") LocalDate date
-    );
+    // Pour les recherches par date d'ajout (createdAt)
+    List<Commande> findByCreatedAtBetweenAndIsActiveTrue(LocalDateTime start, LocalDateTime end);
 
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE a.ref = :articleRef " +
-            "AND DATE(c.createdAt) = :date " +
-            "AND c.isActive = true " +
-            "ORDER BY c.id DESC")
-    List<Commande> findByArticleRefAndDateAjout(
-            @Param("articleRef") String articleRef,
-            @Param("date") LocalDate date
-    );
+    List<Commande> findByArticleRefAndCreatedAtBetweenAndIsActiveTrue(String articleRef, LocalDateTime start, LocalDateTime end);
 
-    // ✅ NOUVEAU: Recherche par période (date souhaitée)
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE a.ref = :articleRef " +
-            "AND c.dateSouhaitee BETWEEN :dateDebut AND :dateFin " +
-            "AND c.isActive = true " +
-            "ORDER BY c.dateSouhaitee DESC")
-    List<Commande> findByArticleRefAndPeriodeSouhaitee(
-            @Param("articleRef") String articleRef,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin
-    );
-
-    // ✅ NOUVEAU: Recherche par période (date de création)
-    @Query("SELECT c FROM Commande c " +
-            "LEFT JOIN FETCH c.article a " +
-            "LEFT JOIN FETCH c.client cl " +
-            "WHERE a.ref = :articleRef " +
-            "AND DATE(c.createdAt) BETWEEN :dateDebut AND :dateFin " +
-            "AND c.isActive = true " +
-            "ORDER BY c.createdAt DESC")
-    List<Commande> findByArticleRefAndPeriodeAjout(
-            @Param("articleRef") String articleRef,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin
-    );
-
-    // Sommaires pour le total - uniquement pour article
-    @Query("SELECT SUM(c.quantite) FROM Commande c " +
-            "WHERE c.article.ref = :articleRef AND c.isActive = true")
-    Integer sumQuantiteByArticleRef(@Param("articleRef") String articleRef);
-
-    @Query("SELECT SUM(c.quantite) FROM Commande c " +
-            "WHERE c.article.ref = :articleRef " +
-            "AND c.dateSouhaitee = :date AND c.isActive = true")
-    Integer sumQuantiteByArticleRefAndDateSouhaitee(
-            @Param("articleRef") String articleRef,
-            @Param("date") LocalDate date
-    );
-
-    @Query("SELECT SUM(c.quantite) FROM Commande c " +
-            "WHERE c.article.ref = :articleRef " +
-            "AND DATE(c.createdAt) = :date AND c.isActive = true")
-    Integer sumQuantiteByArticleRefAndDateAjout(
-            @Param("articleRef") String articleRef,
-            @Param("date") LocalDate date
-    );
-
-    // ✅ NOUVEAU: Sommaires pour les périodes
-    @Query("SELECT SUM(c.quantite) FROM Commande c " +
-            "WHERE c.article.ref = :articleRef " +
-            "AND c.dateSouhaitee BETWEEN :dateDebut AND :dateFin " +
-            "AND c.isActive = true")
-    Integer sumQuantiteByArticleRefAndPeriodeSouhaitee(
-            @Param("articleRef") String articleRef,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin
-    );
-
-    @Query("SELECT SUM(c.quantite) FROM Commande c " +
-            "WHERE c.article.ref = :articleRef " +
-            "AND DATE(c.createdAt) BETWEEN :dateDebut AND :dateFin " +
-            "AND c.isActive = true")
-    Integer sumQuantiteByArticleRefAndPeriodeAjout(
-            @Param("articleRef") String articleRef,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin
-    );
-    // Sommaires avec distinction Ferme/Planifiée
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'FERME' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef AND c.isActive = true")
-    Integer sumQuantiteFermeByArticleRef(@Param("articleRef") String articleRef);
-
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'PLANIFIEE' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef AND c.isActive = true")
-    Integer sumQuantitePlanifieeByArticleRef(@Param("articleRef") String articleRef);
-
-    // Avec date souhaitée
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'FERME' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef " +
-            "AND c.dateSouhaitee = :date AND c.isActive = true")
-    Integer sumQuantiteFermeByArticleRefAndDateSouhaitee(
-            @Param("articleRef") String articleRef, @Param("date") LocalDate date);
-
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'PLANIFIEE' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef " +
-            "AND c.dateSouhaitee = :date AND c.isActive = true")
-    Integer sumQuantitePlanifieeByArticleRefAndDateSouhaitee(
-            @Param("articleRef") String articleRef, @Param("date") LocalDate date);
-
-    // Avec date ajout
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'FERME' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef " +
-            "AND DATE(c.createdAt) = :date AND c.isActive = true")
-    Integer sumQuantiteFermeByArticleRefAndDateAjout(
-            @Param("articleRef") String articleRef, @Param("date") LocalDate date);
-
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'PLANIFIEE' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef " +
-            "AND DATE(c.createdAt) = :date AND c.isActive = true")
-    Integer sumQuantitePlanifieeByArticleRefAndDateAjout(
-            @Param("articleRef") String articleRef, @Param("date") LocalDate date);
-
-    // Avec période souhaitée
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'FERME' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef " +
-            "AND c.dateSouhaitee BETWEEN :dateDebut AND :dateFin AND c.isActive = true")
-    Integer sumQuantiteFermeByArticleRefAndPeriodeSouhaitee(
-            @Param("articleRef") String articleRef,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
-
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'PLANIFIEE' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef " +
-            "AND c.dateSouhaitee BETWEEN :dateDebut AND :dateFin AND c.isActive = true")
-    Integer sumQuantitePlanifieeByArticleRefAndPeriodeSouhaitee(
-            @Param("articleRef") String articleRef,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
-
-    // Avec période ajout
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'FERME' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef " +
-            "AND DATE(c.createdAt) BETWEEN :dateDebut AND :dateFin AND c.isActive = true")
-    Integer sumQuantiteFermeByArticleRefAndPeriodeAjout(
-            @Param("articleRef") String articleRef,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
-
-    @Query("SELECT SUM(CASE WHEN c.typeCommande = 'PLANIFIEE' THEN c.quantite ELSE 0 END) " +
-            "FROM Commande c WHERE c.article.ref = :articleRef " +
-            "AND DATE(c.createdAt) BETWEEN :dateDebut AND :dateFin AND c.isActive = true")
-    Integer sumQuantitePlanifieeByArticleRefAndPeriodeAjout(
-            @Param("articleRef") String articleRef,
-            @Param("dateDebut") LocalDate dateDebut,
-            @Param("dateFin") LocalDate dateFin);
+    // Méthodes dérivées (alternatives simples)
+    List<Commande> findByArticleRefAndIsActiveTrue(String articleRef);
+    List<Commande> findByClientNomAndIsActiveTrue(String clientNom);
+    List<Commande> findByDateSouhaiteeAndIsActiveTrue(LocalDate date);
+    List<Commande> findByArticleIdAndIsActiveTrue(String articleId);
+    List<Commande> findByClientIdAndIsActiveTrue(String clientId);
 }

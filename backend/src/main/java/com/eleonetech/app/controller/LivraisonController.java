@@ -44,7 +44,7 @@ public class LivraisonController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getLivraisonById(@PathVariable Long id) {
+    public ResponseEntity<?> getLivraisonById(@PathVariable String id) {
         try {
             LivraisonResponse response = livraisonService.getLivraisonById(id);
             return ResponseEntity.ok(response);
@@ -75,7 +75,7 @@ public class LivraisonController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateLivraison(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateLivraisonRequest request) {
         try {
             LivraisonResponse response = livraisonService.updateLivraison(id, request);
@@ -88,7 +88,7 @@ public class LivraisonController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteLivraison(@PathVariable Long id) {
+    public ResponseEntity<?> deleteLivraison(@PathVariable String id) {
         try {
             livraisonService.deleteLivraison(id);
             return ResponseEntity.ok(new MessageResponse("Livraison supprimée avec succès"));

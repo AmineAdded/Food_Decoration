@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,13 +26,12 @@ public class ClientService {
 
     @Transactional
     public ClientResponse createClient(CreateClientRequest request) {
-
-        // ✅ Convertir chaîne vide en NULL
+        // Convertir chaîne vide en NULL
         String ref = (request.getRef() == null || request.getRef().trim().isEmpty())
                 ? null
                 : request.getRef().trim();
 
-        // ✅ Vérifier unicité seulement si ref n'est pas null
+        // Vérifier unicité seulement si ref n'est pas null
         if (ref != null && clientRepository.existsByRef(ref)) {
             throw new RuntimeException("Un client avec cette référence existe déjà");
         }
@@ -42,7 +42,7 @@ public class ClientService {
         }
 
         Client client = Client.builder()
-                .ref(ref) // ✅ NULL au lieu de ""
+                .ref(ref)
                 .nomComplet(request.getNomComplet())
                 .adresseLivraison(request.getAdresseLivraison())
                 .adresseFacturation(request.getAdresseFacturation())
@@ -50,6 +50,8 @@ public class ClientService {
                 .modeTransport(request.getModeTransport())
                 .incoTerme(request.getIncoTerme())
                 .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         client = clientRepository.save(client);
@@ -57,7 +59,6 @@ public class ClientService {
 
         return mapToResponse(client);
     }
-
 
     public List<ClientResponse> getAllClients() {
         return clientRepository.findAllActiveOrderByRef()
@@ -76,24 +77,23 @@ public class ClientService {
                 .collect(Collectors.toList());
     }
 
-    public ClientResponse getClientById(Long id) {
+    public ClientResponse getClientById(String id) {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client non trouvé"));
         return mapToResponse(client);
     }
 
     @Transactional
-    public ClientResponse updateClient(Long id, UpdateClientRequest request) {
-
+    public ClientResponse updateClient(String id, UpdateClientRequest request) {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client non trouvé"));
 
-        // ✅ Convertir chaîne vide en NULL
+        // Convertir chaîne vide en NULL
         String newRef = (request.getRef() == null || request.getRef().trim().isEmpty())
                 ? null
                 : request.getRef().trim();
 
-        // ✅ Vérifier unicité seulement si ref a changé et n'est pas null
+        // Vérifier unicité seulement si ref a changé et n'est pas null
         if (newRef != null) {
             boolean refChanged = (client.getRef() == null || !client.getRef().equals(newRef));
             if (refChanged && clientRepository.existsByRef(newRef)) {
@@ -108,7 +108,7 @@ public class ClientService {
             throw new RuntimeException("Un client avec ce nom existe déjà");
         }
 
-        // ✅ Mise à jour
+        // Mise à jour
         client.setRef(newRef);
 
         if (request.getNomComplet() != null) {
@@ -130,21 +130,23 @@ public class ClientService {
             client.setIncoTerme(request.getIncoTerme());
         }
 
+        client.setUpdatedAt(LocalDateTime.now());
+
         client = clientRepository.save(client);
         log.info("Client mis à jour: {} (Ref: {})", client.getNomComplet(), client.getRef());
 
         return mapToResponse(client);
     }
 
-
     @Transactional
-    public void deleteClient(Long id) {
+    public void deleteClient(String id) {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Client non trouvé"));
 
         clientRepository.deleteById(id);
         log.info("Client supprimé: {} (Ref: {})", client.getNomComplet(), client.getRef());
     }
+
     public List<ClientResponse> searchByNomComplet(String nomComplet) {
         return clientRepository.findByNomCompletContaining(nomComplet)
                 .stream()
@@ -165,8 +167,12 @@ public class ClientService {
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
+
     public List<String> getDistinctNomComplets() {
-        return clientRepository.findDistinctNomComplets();
+        return clientRepository.findDistinctNomComplets()
+                .stream()
+                .map(Client::getNomComplet)
+                .collect(Collectors.toList());
     }
 
     private ClientResponse mapToResponse(Client client) {
@@ -180,8 +186,8 @@ public class ClientService {
                 .modeTransport(client.getModeTransport())
                 .incoTerme(client.getIncoTerme())
                 .isActive(client.getIsActive())
-                .createdAt(client.getCreatedAt().format(formatter))
-                .updatedAt(client.getUpdatedAt().format(formatter))
+                .createdAt(client.getCreatedAt() != null ? client.getCreatedAt().format(formatter) : null)
+                .updatedAt(client.getUpdatedAt() != null ? client.getUpdatedAt().format(formatter) : null)
                 .build();
     }
 }

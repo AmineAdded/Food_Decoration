@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ArticleResponse {
-    private Long id;
+    private String id; // ✅ Changé de Long à String
     private String ref;
     private String article;
     private String famille;
@@ -23,8 +23,6 @@ public class ArticleResponse {
     private Double prixUnitaire;
     private Integer mpq;
     private Integer stock;
-
-    // ✅ NOUVEAU: Nom du fichier image
     private String imageFilename;
 
     @Builder.Default

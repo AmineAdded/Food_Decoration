@@ -11,6 +11,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -34,6 +36,8 @@ public class AuthService {
                 .phone(request.getPhone())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         userRepository.save(user);
@@ -76,7 +80,7 @@ public class AuthService {
                 .phone(user.getPhone())
                 .build();
     }
-    // NOUVEAU: Méthode pour rafraîchir le token
+
     public AuthResponse refreshToken(String email) {
         // Récupérer l'utilisateur
         var user = userRepository.findByEmail(email)

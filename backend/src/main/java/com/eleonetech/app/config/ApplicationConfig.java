@@ -2,6 +2,7 @@ package com.eleonetech.app.config;
 
 import com.eleonetech.app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,8 +28,9 @@ public class ApplicationConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        // Spring Security 7+ nécessite le UserDetailsService dans le constructeur
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService());
+        // Pour Spring Security 7+ / Spring Boot 3.x
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }

@@ -1,4 +1,3 @@
-// backend/src/main/java/com/eleonetech/app/dto/ProductionResponse.java
 package com.eleonetech.app.dto;
 
 import lombok.AllArgsConstructor;
@@ -11,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ProductionResponse {
-    private Long id;
+    private String id; // ✅ Changé de Long à String
     private String articleRef;
     private String articleNom;
     private Integer quantite;

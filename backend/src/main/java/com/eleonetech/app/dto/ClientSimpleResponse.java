@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ClientSimpleResponse {
-    private Long id;
+    private String id; // ✅ Changé de Long à String
     private String nomComplet;
 }

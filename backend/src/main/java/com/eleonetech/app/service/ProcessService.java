@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,7 +26,7 @@ public class ProcessService {
 
     @Transactional
     public ProcessResponse createProcess(CreateProcessRequest request) {
-        // ✅ Convertir chaîne vide en NULL
+        // Convertir chaîne vide en NULL
         String ref = (request.getRef() == null || request.getRef().trim().isEmpty())
                 ? null
                 : request.getRef().trim();
@@ -40,9 +41,11 @@ public class ProcessService {
         }
 
         Process process = Process.builder()
-                .ref(ref)  // ✅ NULL au lieu de ""
+                .ref(ref)
                 .nom(request.getNom())
                 .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         process = processRepository.save(process);
@@ -68,18 +71,18 @@ public class ProcessService {
                 .collect(Collectors.toList());
     }
 
-    public ProcessResponse getProcessById(Long id) {
+    public ProcessResponse getProcessById(String id) {
         Process process = processRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Process non trouvé"));
         return mapToResponse(process);
     }
 
     @Transactional
-    public ProcessResponse updateProcess(Long id, UpdateProcessRequest request) {
+    public ProcessResponse updateProcess(String id, UpdateProcessRequest request) {
         Process process = processRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Process non trouvé"));
 
-        // ✅ Convertir chaîne vide en NULL
+        // Convertir chaîne vide en NULL
         String newRef = (request.getRef() == null || request.getRef().trim().isEmpty())
                 ? null
                 : request.getRef().trim();
@@ -98,34 +101,42 @@ public class ProcessService {
             throw new RuntimeException("Un process avec ce nom existe déjà");
         }
 
-        // ✅ Mise à jour avec NULL si vide
+        // Mise à jour avec NULL si vide
         process.setRef(newRef);
 
         if (request.getNom() != null) {
             process.setNom(request.getNom());
         }
 
+        process.setUpdatedAt(LocalDateTime.now());
+
         process = processRepository.save(process);
         log.info("Process mis à jour: {} (Ref: {})", process.getNom(), process.getRef());
 
         return mapToResponse(process);
     }
+
     @Transactional
-    public void deleteProcess(Long id) {
+    public void deleteProcess(String id) {
         Process process = processRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Process non trouvé"));
 
         processRepository.deleteById(id);
         log.info("Process supprimé: {} (Ref: {})", process.getNom(), process.getRef());
     }
+
     public List<ProcessResponse> searchByNom(String nom) {
         return processRepository.findByNomContaining(nom)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
+
     public List<String> getDistinctNoms() {
-        return processRepository.findDistinctNoms();
+        return processRepository.findDistinctNoms()
+                .stream()
+                .map(Process::getNom)
+                .collect(Collectors.toList());
     }
 
     private ProcessResponse mapToResponse(Process process) {
@@ -134,8 +145,8 @@ public class ProcessService {
                 .ref(process.getRef())
                 .nom(process.getNom())
                 .isActive(process.getIsActive())
-                .createdAt(process.getCreatedAt().format(formatter))
-                .updatedAt(process.getUpdatedAt().format(formatter))
+                .createdAt(process.getCreatedAt() != null ? process.getCreatedAt().format(formatter) : null)
+                .updatedAt(process.getUpdatedAt() != null ? process.getUpdatedAt().format(formatter) : null)
                 .build();
     }
 }

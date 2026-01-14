@@ -44,7 +44,7 @@ public class ClientController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getClientById(@PathVariable Long id) {
+    public ResponseEntity<?> getClientById(@PathVariable String id) {
         try {
             ClientResponse response = clientService.getClientById(id);
             return ResponseEntity.ok(response);
@@ -57,7 +57,7 @@ public class ClientController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateClient(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateClientRequest request) {
         try {
             ClientResponse response = clientService.updateClient(id, request);
@@ -70,7 +70,7 @@ public class ClientController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteClient(@PathVariable Long id) {
+    public ResponseEntity<?> deleteClient(@PathVariable String id) {
         try {
             clientService.deleteClient(id);
             return ResponseEntity.ok(new MessageResponse("Client supprimé avec succès"));

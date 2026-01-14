@@ -1,16 +1,17 @@
 package com.eleonetech.app.entity;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "process")
+@Document(collection = "processes")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -18,33 +19,18 @@ import java.time.LocalDateTime;
 public class Process {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(name = "ref", unique = true, length = 50)
+    @Indexed(unique = true, sparse = true)
     private String ref;
 
     @NotBlank(message = "Le nom du process est obligatoire")
-    @Column(name = "nom", nullable = false, unique = true, length = 100)
+    @Indexed(unique = true)
     private String nom;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_active")
+    @Builder.Default
     private Boolean isActive = true;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

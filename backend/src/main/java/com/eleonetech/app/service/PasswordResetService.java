@@ -46,6 +46,7 @@ public class PasswordResetService {
         PasswordResetOTP otp = PasswordResetOTP.builder()
                 .email(email)
                 .otpCode(otpCode)
+                .createdAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusMinutes(otpExpirationMinutes))
                 .isUsed(false)
                 .build();
@@ -82,6 +83,7 @@ public class PasswordResetService {
 
         // Mettre à jour le mot de passe
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
         // Marquer l'OTP comme utilisé

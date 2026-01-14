@@ -48,7 +48,7 @@ public class CommandeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getCommandeById(@PathVariable Long id) {
+    public ResponseEntity<?> getCommandeById(@PathVariable String id) {
         try {
             CommandeResponse response = commandeService.getCommandeById(id);
             return ResponseEntity.ok(response);
@@ -162,7 +162,7 @@ public class CommandeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCommande(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateCommandeRequest request) {
         try {
             CommandeResponse response = commandeService.updateCommande(id, request);
@@ -175,7 +175,7 @@ public class CommandeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteCommande(@PathVariable Long id) {
+    public ResponseEntity<?> deleteCommande(@PathVariable String id) {
         try {
             commandeService.deleteCommande(id);
             return ResponseEntity.ok(new MessageResponse("Commande supprimée avec succès"));

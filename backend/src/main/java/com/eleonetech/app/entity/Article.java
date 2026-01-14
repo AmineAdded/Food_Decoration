@@ -1,18 +1,20 @@
 package com.eleonetech.app.entity;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "articles")
+@Document(collection = "articles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,93 +22,79 @@ import java.util.List;
 public class Article {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     @NotBlank(message = "La référence de l'article est obligatoire")
-    @Column(name = "ref", nullable = false, unique = true, length = 100)
+    @Indexed(unique = true)
     private String ref;
 
     @NotBlank(message = "Le nom de l'article est obligatoire")
-    @Column(name = "article", nullable = false)
     private String article;
 
-    @Column(name = "famille", length = 100)
     private String famille;
-
-    @Column(name = "sous_famille", length = 100)
     private String sousFamille;
-
-    @Column(name = "type_process", length = 50)
     private String typeProcess;
-
-    @Column(name = "type_produit", length = 50)
     private String typeProduit;
-
-    @Column(name = "prix_unitaire")
     private Double prixUnitaire;
-
-    @Column(name = "mpq")
     private Integer mpq;
 
-    @Column(name = "stock")
     @Builder.Default
     private Integer stock = 0;
 
-    // ✅ NOUVEAU: Champ pour stocker le nom du fichier image
-    @Column(name = "image_filename", length = 255)
     private String imageFilename;
 
-    @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Références vers les clients (DBRef pour relation)
+    @DBRef
     @Builder.Default
-    private List<ArticleClient> articleClients = new ArrayList<>();
+    private List<Client> clients = new ArrayList<>();
 
-    @OneToMany(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Liste embarquée des processes avec leurs attributs
     @Builder.Default
-    private List<ArticleProcess> articleProcesses = new ArrayList<>();
+    private List<ArticleProcessInfo> processes = new ArrayList<>();
 
-    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    // Classe interne pour stocker les infos de process
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ArticleProcessInfo {
+        @DBRef
+        private Process process;
+        private Double tempsParPF;
+        private Integer cadenceMax;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
+    // Méthodes utilitaires
     public void addClient(Client client) {
-        ArticleClient articleClient = new ArticleClient();
-        articleClient.setArticle(this);
-        articleClient.setClient(client);
-        articleClients.add(articleClient);
+        if (!clients.contains(client)) {
+            clients.add(client);
+        }
     }
 
     public void removeClient(Client client) {
-        articleClients.removeIf(ac -> ac.getClient().equals(client));
+        clients.remove(client);
     }
 
-    public void addProcess(com.eleonetech.app.entity.Process process, Double tempsParPF, Integer cadenceMax) {
-        ArticleProcess articleProcess = new ArticleProcess();
-        articleProcess.setArticle(this);
-        articleProcess.setProcess(process);
-        articleProcess.setTempsParPF(tempsParPF);
-        articleProcess.setCadenceMax(cadenceMax);
-        articleProcesses.add(articleProcess);
+    public void addProcess(Process process, Double tempsParPF, Integer cadenceMax) {
+        ArticleProcessInfo info = ArticleProcessInfo.builder()
+                .process(process)
+                .tempsParPF(tempsParPF)
+                .cadenceMax(cadenceMax)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        processes.add(info);
     }
 
-    public void removeProcess(com.eleonetech.app.entity.Process process) {
-        articleProcesses.removeIf(ap -> ap.getProcess().equals(process));
+    public void removeProcess(Process process) {
+        processes.removeIf(ap -> ap.getProcess().equals(process));
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -78,18 +79,22 @@ public class LivraisonService {
                 .quantiteLivree(request.getQuantiteLivree())
                 .dateLivraison(dateLivraison)
                 .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         livraison = livraisonRepository.save(livraison);
 
-        // ✅ Déduire du stock
+        // Déduire du stock
         article.setStock(article.getStock() - request.getQuantiteLivree());
+        article.setUpdatedAt(LocalDateTime.now());
         articleRepository.save(article);
 
-        // ✅ NOUVEAU: Vérifier si la commande est totalement livrée
+        // Vérifier si la commande est totalement livrée
         Integer totalLivre = livraisonRepository.sumQuantiteLivreeByCommandeId(commande.getId());
         if (totalLivre != null && totalLivre >= commande.getQuantite()) {
             commande.setIsActive(false);
+            commande.setUpdatedAt(LocalDateTime.now());
             commandeRepository.save(commande);
             log.info("Commande {} totalement livrée - désactivée", commande.getNumeroCommandeClient());
         }
@@ -101,15 +106,22 @@ public class LivraisonService {
     }
 
     private String generateNumeroBL(int year) {
-        List<String> lastBLs = livraisonRepository.findLastNumeroBLForYear(year);
+        List<Livraison> livraisons = livraisonRepository.findLastNumeroBLForYear(year);
 
-        if (lastBLs.isEmpty()) {
+        if (livraisons.isEmpty()) {
             return "1/" + year;
         }
 
-        String lastBL = lastBLs.get(0);
-        int lastNumber = Integer.parseInt(lastBL.split("/")[0]);
-        return (lastNumber + 1) + "/" + year;
+        // Trouver le plus grand numéro pour cette année
+        int maxNumber = livraisons.stream()
+                .map(l -> {
+                    String[] parts = l.getNumeroBL().split("/");
+                    return Integer.parseInt(parts[0]);
+                })
+                .max(Integer::compareTo)
+                .orElse(0);
+
+        return (maxNumber + 1) + "/" + year;
     }
 
     public List<LivraisonResponse> getAllLivraisons() {
@@ -119,11 +131,9 @@ public class LivraisonService {
                 .collect(Collectors.toList());
     }
 
-    public LivraisonResponse getLivraisonById(Long id) {
-        Livraison livraison = livraisonRepository.findByIdWithDetails(id);
-        if (livraison == null) {
-            throw new RuntimeException("Livraison non trouvée");
-        }
+    public LivraisonResponse getLivraisonById(String id) {
+        Livraison livraison = livraisonRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Livraison non trouvée"));
         return mapToResponse(livraison);
     }
 
@@ -149,16 +159,15 @@ public class LivraisonService {
     }
 
     @Transactional
-    public LivraisonResponse updateLivraison(Long id, UpdateLivraisonRequest request) {
-        Livraison livraison = livraisonRepository.findByIdWithDetails(id);
-        if (livraison == null) {
-            throw new RuntimeException("Livraison non trouvée");
-        }
+    public LivraisonResponse updateLivraison(String id, UpdateLivraisonRequest request) {
+        Livraison livraison = livraisonRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Livraison non trouvée"));
 
         // Restaurer l'ancien stock
         Article oldArticle = livraison.getArticle();
         int oldQuantite = livraison.getQuantiteLivree();
         oldArticle.setStock(oldArticle.getStock() + oldQuantite);
+        oldArticle.setUpdatedAt(LocalDateTime.now());
 
         // Nouveau article
         Article newArticle = articleRepository.findByRef(request.getArticleRef())
@@ -186,11 +195,13 @@ public class LivraisonService {
         livraison.setCommande(newCommande);
         livraison.setQuantiteLivree(request.getQuantiteLivree());
         livraison.setDateLivraison(dateLivraison);
+        livraison.setUpdatedAt(LocalDateTime.now());
 
         livraison = livraisonRepository.save(livraison);
 
         // Déduire du nouveau stock
         newArticle.setStock(newArticle.getStock() - request.getQuantiteLivree());
+        newArticle.setUpdatedAt(LocalDateTime.now());
         articleRepository.save(newArticle);
 
         // Sauvegarder l'ancien article si différent
@@ -198,45 +209,25 @@ public class LivraisonService {
             articleRepository.save(oldArticle);
         }
 
-        // ✅ NOUVEAU: Vérifier le statut de l'ancienne et nouvelle commande
-        Commande oldCommande = commandeRepository.findByIdWithDetails(livraison.getCommande().getId());
-        Integer totalLivreOld = livraisonRepository.sumQuantiteLivreeByCommandeId(oldCommande.getId());
-        if (totalLivreOld != null && totalLivreOld >= oldCommande.getQuantite()) {
-            oldCommande.setIsActive(false);
-            commandeRepository.save(oldCommande);
-        } else {
-            oldCommande.setIsActive(true);
-            commandeRepository.save(oldCommande);
-        }
-
-        Integer totalLivreNew = livraisonRepository.sumQuantiteLivreeByCommandeId(newCommande.getId());
-        if (totalLivreNew != null && totalLivreNew >= newCommande.getQuantite()) {
-            newCommande.setIsActive(false);
-            commandeRepository.save(newCommande);
-        } else {
-            newCommande.setIsActive(true);
-            commandeRepository.save(newCommande);
-        }
-
         log.info("Livraison mise à jour: ID {}", id);
         return mapToResponse(livraison);
     }
 
     @Transactional
-    public void deleteLivraison(Long id) {
-        Livraison livraison = livraisonRepository.findByIdWithDetails(id);
-        if (livraison == null) {
-            throw new RuntimeException("Livraison non trouvée");
-        }
+    public void deleteLivraison(String id) {
+        Livraison livraison = livraisonRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Livraison non trouvée"));
 
         // Restaurer le stock
         Article article = livraison.getArticle();
         article.setStock(article.getStock() + livraison.getQuantiteLivree());
+        article.setUpdatedAt(LocalDateTime.now());
         articleRepository.save(article);
 
-        // ✅ NOUVEAU: Réactiver la commande si elle était désactivée
+        // Réactiver la commande si elle était désactivée
         Commande commande = livraison.getCommande();
         commande.setIsActive(true);
+        commande.setUpdatedAt(LocalDateTime.now());
         commandeRepository.save(commande);
 
         livraisonRepository.deleteById(id);

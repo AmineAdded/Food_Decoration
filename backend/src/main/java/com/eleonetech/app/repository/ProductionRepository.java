@@ -1,72 +1,37 @@
-// backend/src/main/java/com/eleonetech/app/repository/ProductionRepository.java
 package com.eleonetech.app.repository;
 
 import com.eleonetech.app.entity.Production;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface ProductionRepository extends JpaRepository<Production, Long> {
+public interface ProductionRepository extends MongoRepository<Production, String> {
 
-    @Query("SELECT p FROM Production p " +
-            "LEFT JOIN FETCH p.article " +
-            "WHERE p.isActive = true " +
-            "ORDER BY p.dateProduction DESC, p.id DESC")
+    // ✅ Maintenant on peut chercher directement par articleRef
+    @Query(value = "{'isActive': true}", sort = "{'dateProduction': -1, 'id': -1}")
     List<Production> findAllActiveWithArticle();
 
-    @Query("SELECT p FROM Production p " +
-            "LEFT JOIN FETCH p.article a " +
-            "WHERE p.id = :id")
-    Production findByIdWithArticle(@Param("id") Long id);
+    @Query("{'articleRef': ?0, 'isActive': true}")
+    List<Production> findByArticleRef(String articleRef);
 
-    @Query("SELECT p FROM Production p " +
-            "LEFT JOIN FETCH p.article a " +
-            "WHERE a.ref = :articleRef " +
-            "AND p.isActive = true " +
-            "ORDER BY p.dateProduction DESC")
-    List<Production> findByArticleRef(@Param("articleRef") String articleRef);
+    @Query("{'dateProduction': ?0, 'isActive': true}")
+    List<Production> findByDate(LocalDate date);
 
-    @Query("SELECT p FROM Production p " +
-            "LEFT JOIN FETCH p.article a " +
-            "WHERE p.dateProduction = :date " +
-            "AND p.isActive = true " +
-            "ORDER BY p.dateProduction DESC")
-    List<Production> findByDate(@Param("date") LocalDate date);
+    @Query("{'articleRef': ?0, 'dateProduction': ?1, 'isActive': true}")
+    List<Production> findByArticleRefAndDate(String articleRef, LocalDate date);
 
-    @Query("SELECT p FROM Production p " +
-            "LEFT JOIN FETCH p.article a " +
-            "WHERE a.ref = :articleRef " +
-            "AND p.dateProduction = :date " +
-            "AND p.isActive = true " +
-            "ORDER BY p.dateProduction DESC")
-    List<Production> findByArticleRefAndDate(
-            @Param("articleRef") String articleRef,
-            @Param("date") LocalDate date
-    );
+    @Query("{'dateProduction': {$gte: ?0, $lte: ?1}, 'isActive': true}")
+    List<Production> findByDateBetween(LocalDate startDate, LocalDate endDate);
 
-    @Query("SELECT p FROM Production p " +
-            "LEFT JOIN FETCH p.article a " +
-            "WHERE YEAR(p.dateProduction) = :year " +
-            "AND MONTH(p.dateProduction) = :month " +
-            "AND p.isActive = true " +
-            "ORDER BY p.dateProduction DESC")
-    List<Production> findByYearAndMonth(@Param("year") int year, @Param("month") int month);
+    @Query("{'articleRef': ?0, 'dateProduction': {$gte: ?1, $lte: ?2}, 'isActive': true}")
+    List<Production> findByArticleRefAndDateBetween(String articleRef, LocalDate startDate, LocalDate endDate);
 
-    @Query("SELECT p FROM Production p " +
-            "LEFT JOIN FETCH p.article a " +
-            "WHERE a.ref = :articleRef " +
-            "AND YEAR(p.dateProduction) = :year " +
-            "AND MONTH(p.dateProduction) = :month " +
-            "AND p.isActive = true " +
-            "ORDER BY p.dateProduction DESC")
-    List<Production> findByArticleRefAndYearAndMonth(
-            @Param("articleRef") String articleRef,
-            @Param("year") int year,
-            @Param("month") int month
-    );
+    // Alternative avec méthode dérivée (sans @Query)
+    List<Production> findByArticleRefAndIsActiveTrue(String articleRef);
+    List<Production> findByDateProductionAndIsActiveTrue(LocalDate date);
+    List<Production> findByArticleIdAndIsActiveTrue(String articleId);
 }

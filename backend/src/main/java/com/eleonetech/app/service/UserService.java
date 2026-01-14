@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -40,6 +42,7 @@ public class UserService {
         user.setLastname(request.getLastname());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
+        user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
 
@@ -69,6 +72,7 @@ public class UserService {
 
         // Mettre à jour le mot de passe
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
         log.info("Mot de passe changé pour: {}", email);

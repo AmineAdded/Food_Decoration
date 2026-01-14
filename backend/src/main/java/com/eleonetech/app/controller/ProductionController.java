@@ -44,7 +44,7 @@ public class ProductionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProductionById(@PathVariable Long id) {
+    public ResponseEntity<?> getProductionById(@PathVariable String id) {
         try {
             ProductionResponse response = productionService.getProductionById(id);
             return ResponseEntity.ok(response);
@@ -94,7 +94,7 @@ public class ProductionController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProduction(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateProductionRequest request) {
         try {
             ProductionResponse response = productionService.updateProduction(id, request);
@@ -107,7 +107,7 @@ public class ProductionController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProduction(@PathVariable Long id) {
+    public ResponseEntity<?> deleteProduction(@PathVariable String id) {
         try {
             productionService.deleteProduction(id);
             return ResponseEntity.ok(new MessageResponse("Production supprimée avec succès"));

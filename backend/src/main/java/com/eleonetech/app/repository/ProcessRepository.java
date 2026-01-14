@@ -1,27 +1,27 @@
 package com.eleonetech.app.repository;
 
 import com.eleonetech.app.entity.Process;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ProcessRepository extends JpaRepository<Process, Long> {
+public interface ProcessRepository extends MongoRepository<Process, String> {
     Optional<Process> findByRef(String ref);
     Optional<Process> findByNom(String nom);
     Boolean existsByRef(String ref);
     Boolean existsByNom(String nom);
     List<Process> findByIsActiveTrue();
 
-    @Query("SELECT p FROM Process p WHERE p.isActive = true ORDER BY p.ref ASC")
+    @Query(value = "{'isActive': true}", sort = "{'ref': 1}")
     List<Process> findAllActiveOrderByRef();
-    @Query("SELECT p FROM Process p WHERE p.nom LIKE %:nom% AND p.isActive = true ORDER BY p.ref ASC")
-    List<Process> findByNomContaining(@Param("nom") String nom);
 
-    @Query("SELECT DISTINCT p.nom FROM Process p WHERE p.isActive = true ORDER BY p.nom ASC")
-    List<String> findDistinctNoms();
+    @Query(value = "{'nom': {$regex: ?0, $options: 'i'}, 'isActive': true}", sort = "{'ref': 1}")
+    List<Process> findByNomContaining(String nom);
+
+    @Query(value = "{'isActive': true}", fields = "{'nom': 1}")
+    List<Process> findDistinctNoms();
 }

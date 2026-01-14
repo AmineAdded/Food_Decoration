@@ -1,34 +1,33 @@
 package com.eleonetech.app.repository;
 
 import com.eleonetech.app.entity.Client;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ClientRepository extends JpaRepository<Client, Long> {
+public interface ClientRepository extends MongoRepository<Client, String> {
     Optional<Client> findByRef(String ref);
     Optional<Client> findByNomComplet(String nomComplet);
     Boolean existsByRef(String ref);
     Boolean existsByNomComplet(String nomComplet);
     List<Client> findByIsActiveTrue();
 
-    @Query("SELECT c FROM Client c WHERE c.isActive = true ORDER BY c.ref ASC")
+    @Query(value = "{'isActive': true}", sort = "{'ref': 1}")
     List<Client> findAllActiveOrderByRef();
 
-    @Query("SELECT c FROM Client c WHERE c.nomComplet LIKE %:nomComplet% AND c.isActive = true ORDER BY c.ref ASC")
-    List<Client> findByNomCompletContaining(@Param("nomComplet") String nomComplet);
+    @Query(value = "{'nomComplet': {$regex: ?0, $options: 'i'}, 'isActive': true}", sort = "{'ref': 1}")
+    List<Client> findByNomCompletContaining(String nomComplet);
 
-    @Query("SELECT c FROM Client c WHERE c.modeTransport = :modeTransport AND c.isActive = true ORDER BY c.ref ASC")
-    List<Client> findByModeTransport(@Param("modeTransport") String modeTransport);
+    @Query(value = "{'modeTransport': ?0, 'isActive': true}", sort = "{'ref': 1}")
+    List<Client> findByModeTransport(String modeTransport);
 
-    @Query("SELECT c FROM Client c WHERE c.incoTerme = :incoTerme AND c.isActive = true ORDER BY c.ref ASC")
-    List<Client> findByIncoTerme(@Param("incoTerme") String incoTerme);
+    @Query(value = "{'incoTerme': ?0, 'isActive': true}", sort = "{'ref': 1}")
+    List<Client> findByIncoTerme(String incoTerme);
 
-    @Query("SELECT DISTINCT c.nomComplet FROM Client c WHERE c.isActive = true ORDER BY c.nomComplet ASC")
-    List<String> findDistinctNomComplets();
+    @Query(value = "{'isActive': true}", fields = "{'nomComplet': 1}")
+    List<Client> findDistinctNomComplets();
 }

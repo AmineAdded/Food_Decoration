@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class LivraisonResponse {
-    private Long id;
+    private String id; // ✅ Changé de Long à String
     private String numeroBL;
     private String articleRef;
     private String articleNom;

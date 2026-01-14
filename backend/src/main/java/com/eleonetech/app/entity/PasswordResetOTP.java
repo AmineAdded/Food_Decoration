@@ -1,15 +1,15 @@
 package com.eleonetech.app.entity;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "password_reset_otp")
+@Document(collection = "password_reset_otp")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,26 +17,13 @@ import java.time.LocalDateTime;
 public class PasswordResetOTP {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false)
     private String email;
-
-    @Column(nullable = false, length = 6)
     private String otpCode;
-
-    @Column(nullable = false)
     private LocalDateTime createdAt;
-
-    @Column(nullable = false)
     private LocalDateTime expiresAt;
 
-    @Column(nullable = false)
+    @Builder.Default
     private Boolean isUsed = false;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }
