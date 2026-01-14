@@ -50,6 +50,7 @@
               "ssr": false,
               "outputHashing": "all",
               "outputPath": "dist/frontend/browser",
+              "index": "index.html",
               "budgets": [
                 {
                   "type": "initial",
