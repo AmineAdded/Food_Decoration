@@ -43,11 +43,11 @@ public class LivraisonService {
         Client client = clientRepository.findByNomComplet(request.getClientNom())
                 .orElseThrow(() -> new RuntimeException("Client non trouvé: " + request.getClientNom()));
 
-        // Trouver la commande
+        // ✅ Trouver la commande avec les nouveaux champs
         List<Commande> commandes = commandeRepository.findByArticleRef(request.getArticleRef());
         Commande commande = commandes.stream()
                 .filter(c -> c.getNumeroCommandeClient().equals(request.getNumeroCommandeClient()))
-                .filter(c -> c.getClient().getNomComplet().equals(request.getClientNom()))
+                .filter(c -> c.getClientNom().equals(request.getClientNom()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
 
@@ -70,12 +70,16 @@ public class LivraisonService {
         // Générer le numéro BL
         String numeroBL = generateNumeroBL(dateLivraison.getYear());
 
-        // Créer la livraison
+        // ✅ Créer la livraison avec IDs et données dénormalisées
         Livraison livraison = Livraison.builder()
                 .numeroBL(numeroBL)
-                .article(article)
-                .client(client)
-                .commande(commande)
+                .articleId(article.getId())
+                .articleRef(article.getRef())
+                .articleNom(article.getArticle())
+                .clientId(client.getId())
+                .clientNom(client.getNomComplet())
+                .commandeId(commande.getId())
+                .numeroCommandeClient(commande.getNumeroCommandeClient())
                 .quantiteLivree(request.getQuantiteLivree())
                 .dateLivraison(dateLivraison)
                 .isActive(true)
@@ -102,11 +106,16 @@ public class LivraisonService {
         log.info("Livraison créée: BL {} - {} unités de {} pour {}",
                 numeroBL, request.getQuantiteLivree(), article.getArticle(), client.getNomComplet());
 
+        // Charger les objets pour la réponse
+        livraison.setArticle(article);
+        livraison.setClient(client);
+        livraison.setCommande(commande);
         return mapToResponse(livraison);
     }
 
     private String generateNumeroBL(int year) {
-        List<Livraison> livraisons = livraisonRepository.findLastNumeroBLForYear(year);
+        // ✅ Chercher par pattern de l'année
+        List<Livraison> livraisons = livraisonRepository.findByNumeroBLContaining("/" + year);
 
         if (livraisons.isEmpty()) {
             return "1/" + year;
@@ -116,7 +125,11 @@ public class LivraisonService {
         int maxNumber = livraisons.stream()
                 .map(l -> {
                     String[] parts = l.getNumeroBL().split("/");
-                    return Integer.parseInt(parts[0]);
+                    try {
+                        return Integer.parseInt(parts[0]);
+                    } catch (NumberFormatException e) {
+                        return 0;
+                    }
                 })
                 .max(Integer::compareTo)
                 .orElse(0);
@@ -127,34 +140,34 @@ public class LivraisonService {
     public List<LivraisonResponse> getAllLivraisons() {
         return livraisonRepository.findAllActiveWithDetails()
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::loadEntitiesAndMap)
                 .collect(Collectors.toList());
     }
 
     public LivraisonResponse getLivraisonById(String id) {
         Livraison livraison = livraisonRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Livraison non trouvée"));
-        return mapToResponse(livraison);
+        return loadEntitiesAndMap(livraison);
     }
 
     public List<LivraisonResponse> searchByArticleRef(String articleRef) {
         return livraisonRepository.findByArticleRef(articleRef)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::loadEntitiesAndMap)
                 .collect(Collectors.toList());
     }
 
     public List<LivraisonResponse> searchByClientNom(String clientNom) {
         return livraisonRepository.findByClientNom(clientNom)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::loadEntitiesAndMap)
                 .collect(Collectors.toList());
     }
 
     public List<LivraisonResponse> searchByNumeroCommande(String numeroCommande) {
         return livraisonRepository.findByNumeroCommande(numeroCommande)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::loadEntitiesAndMap)
                 .collect(Collectors.toList());
     }
 
@@ -164,7 +177,8 @@ public class LivraisonService {
                 .orElseThrow(() -> new RuntimeException("Livraison non trouvée"));
 
         // Restaurer l'ancien stock
-        Article oldArticle = livraison.getArticle();
+        Article oldArticle = articleRepository.findById(livraison.getArticleId())
+                .orElseThrow(() -> new RuntimeException("Article original non trouvé"));
         int oldQuantite = livraison.getQuantiteLivree();
         oldArticle.setStock(oldArticle.getStock() + oldQuantite);
         oldArticle.setUpdatedAt(LocalDateTime.now());
@@ -176,10 +190,11 @@ public class LivraisonService {
         Client newClient = clientRepository.findByNomComplet(request.getClientNom())
                 .orElseThrow(() -> new RuntimeException("Client non trouvé: " + request.getClientNom()));
 
+        // ✅ Trouver la nouvelle commande
         List<Commande> commandes = commandeRepository.findByArticleRef(request.getArticleRef());
         Commande newCommande = commandes.stream()
                 .filter(c -> c.getNumeroCommandeClient().equals(request.getNumeroCommandeClient()))
-                .filter(c -> c.getClient().getNomComplet().equals(request.getClientNom()))
+                .filter(c -> c.getClientNom().equals(request.getClientNom()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
 
@@ -190,9 +205,14 @@ public class LivraisonService {
 
         LocalDate dateLivraison = LocalDate.parse(request.getDateLivraison(), DATE_FORMATTER);
 
-        livraison.setArticle(newArticle);
-        livraison.setClient(newClient);
-        livraison.setCommande(newCommande);
+        // ✅ Mettre à jour avec IDs et données dénormalisées
+        livraison.setArticleId(newArticle.getId());
+        livraison.setArticleRef(newArticle.getRef());
+        livraison.setArticleNom(newArticle.getArticle());
+        livraison.setClientId(newClient.getId());
+        livraison.setClientNom(newClient.getNomComplet());
+        livraison.setCommandeId(newCommande.getId());
+        livraison.setNumeroCommandeClient(newCommande.getNumeroCommandeClient());
         livraison.setQuantiteLivree(request.getQuantiteLivree());
         livraison.setDateLivraison(dateLivraison);
         livraison.setUpdatedAt(LocalDateTime.now());
@@ -210,6 +230,10 @@ public class LivraisonService {
         }
 
         log.info("Livraison mise à jour: ID {}", id);
+
+        livraison.setArticle(newArticle);
+        livraison.setClient(newClient);
+        livraison.setCommande(newCommande);
         return mapToResponse(livraison);
     }
 
@@ -219,13 +243,15 @@ public class LivraisonService {
                 .orElseThrow(() -> new RuntimeException("Livraison non trouvée"));
 
         // Restaurer le stock
-        Article article = livraison.getArticle();
+        Article article = articleRepository.findById(livraison.getArticleId())
+                .orElseThrow(() -> new RuntimeException("Article non trouvé"));
         article.setStock(article.getStock() + livraison.getQuantiteLivree());
         article.setUpdatedAt(LocalDateTime.now());
         articleRepository.save(article);
 
         // Réactiver la commande si elle était désactivée
-        Commande commande = livraison.getCommande();
+        Commande commande = commandeRepository.findById(livraison.getCommandeId())
+                .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
         commande.setIsActive(true);
         commande.setUpdatedAt(LocalDateTime.now());
         commandeRepository.save(commande);
@@ -234,14 +260,49 @@ public class LivraisonService {
         log.info("Livraison supprimée: ID {} - Commande réactivée", id);
     }
 
+    // ============ MÉTHODES PRIVÉES ============
+
+    private LivraisonResponse loadEntitiesAndMap(Livraison livraison) {
+        // Charger les entités si pas déjà présentes
+        if (livraison.getArticle() == null) {
+            Article article = articleRepository.findById(livraison.getArticleId())
+                    .orElseThrow(() -> new RuntimeException("Article non trouvé"));
+            livraison.setArticle(article);
+        }
+
+        if (livraison.getClient() == null) {
+            Client client = clientRepository.findById(livraison.getClientId())
+                    .orElseThrow(() -> new RuntimeException("Client non trouvé"));
+            livraison.setClient(client);
+        }
+
+        if (livraison.getCommande() == null) {
+            Commande commande = commandeRepository.findById(livraison.getCommandeId())
+                    .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
+            livraison.setCommande(commande);
+        }
+
+        return mapToResponse(livraison);
+    }
+
     private LivraisonResponse mapToResponse(Livraison livraison) {
+        // Utiliser les données dénormalisées si les objets ne sont pas chargés
+        String articleRef = livraison.getArticle() != null ?
+                livraison.getArticle().getRef() : livraison.getArticleRef();
+        String articleNom = livraison.getArticle() != null ?
+                livraison.getArticle().getArticle() : livraison.getArticleNom();
+        String clientNom = livraison.getClient() != null ?
+                livraison.getClient().getNomComplet() : livraison.getClientNom();
+        String numeroCommandeClient = livraison.getCommande() != null ?
+                livraison.getCommande().getNumeroCommandeClient() : livraison.getNumeroCommandeClient();
+
         return LivraisonResponse.builder()
                 .id(livraison.getId())
                 .numeroBL(livraison.getNumeroBL())
-                .articleRef(livraison.getArticle().getRef())
-                .articleNom(livraison.getArticle().getArticle())
-                .clientNom(livraison.getClient().getNomComplet())
-                .numeroCommandeClient(livraison.getCommande().getNumeroCommandeClient())
+                .articleRef(articleRef)
+                .articleNom(articleNom)
+                .clientNom(clientNom)
+                .numeroCommandeClient(numeroCommandeClient)
                 .quantiteLivree(livraison.getQuantiteLivree())
                 .dateLivraison(livraison.getDateLivraison().format(DATE_FORMATTER))
                 .isActive(livraison.getIsActive())
