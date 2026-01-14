@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { TokenRefreshService } from './token-refresh.service';
+import { environment } from '../../environments/environment';
 
 export interface SignupRequest {
   firstname: string;
@@ -36,7 +37,7 @@ export interface MessageResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api/auth';
+  private apiUrl = `${environment.BASE_URL}/api/auth`;
   private currentUserSubject: BehaviorSubject<AuthResponse | null>;
   public currentUser: Observable<AuthResponse | null>;
 

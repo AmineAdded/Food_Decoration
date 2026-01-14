@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, tap, throwError } from 'rxjs';
 import { AuthResponse, MessageResponse } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface UpdateProfileRequest {
   firstname: string;
@@ -19,7 +20,7 @@ export interface ChangePasswordRequest {
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = 'http://localhost:8080/api/user';
+  private apiUrl = `${environment.BASE_URL}/api/user`;
 
   constructor(private http: HttpClient) {}
 

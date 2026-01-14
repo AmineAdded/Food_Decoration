@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface CreateProcessRequest {
   ref: string | null;
@@ -35,7 +36,7 @@ export interface MessageResponse {
   providedIn: 'root'
 })
 export class ProcessService {
-  private apiUrl = 'http://localhost:8080/api/process';
+  private apiUrl = `${environment.BASE_URL}/api/process`;
 
   constructor(private http: HttpClient) {}
 

@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface CreateClientRequest {
   ref: string | null;
@@ -50,7 +51,7 @@ export interface MessageResponse {
   providedIn: 'root'
 })
 export class ClientService {
-  private apiUrl = 'http://localhost:8080/api/clients';
+  private apiUrl = `${environment.BASE_URL}/api/clients`;
 
   constructor(private http: HttpClient) {}
 

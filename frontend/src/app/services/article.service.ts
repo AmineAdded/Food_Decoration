@@ -2,6 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface ProcessDetail {
   id: string;
@@ -65,7 +66,7 @@ export interface MessageResponse {
   providedIn: 'root'
 })
 export class ArticleService {
-  private apiUrl = 'http://localhost:8080/api/articles';
+  private apiUrl = `${environment.BASE_URL}/api/articles`;
 
   constructor(private http: HttpClient) {}
 

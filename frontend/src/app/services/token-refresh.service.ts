@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 interface TokenRefreshResponse {
   token: string;
@@ -20,7 +21,7 @@ interface TokenRefreshResponse {
   providedIn: 'root'
 })
 export class TokenRefreshService implements OnDestroy {
-  private apiUrl = 'http://localhost:8080/api/auth';
+  private apiUrl = `${environment.BASE_URL}/api/auth`;
   private refreshSubscription?: Subscription;
   private readonly REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 heures en millisecondes
   // Alternative: rafraîchir toutes les heures
