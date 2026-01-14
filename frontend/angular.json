@@ -49,6 +49,7 @@
               "outputMode": "static",
               "ssr": false,
               "outputHashing": "all",
+              "outputPath": "dist/frontend/browser",
               "budgets": [
                 {
                   "type": "initial",
