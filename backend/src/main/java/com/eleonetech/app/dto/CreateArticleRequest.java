@@ -26,9 +26,10 @@ public class CreateArticleRequest {
     private String typeProduit;
     private Double prixUnitaire;
     private Integer mpq;
-
-    // ✅ NOUVEAU: Stock (optionnel, par défaut 0)
     private Integer stock;
+
+    // ✅ OPTIONNEL: Permettre de créer un article avec une URL d'image existante
+    private String imageUrl;
 
     @Builder.Default
     private List<String> clients = new ArrayList<>();

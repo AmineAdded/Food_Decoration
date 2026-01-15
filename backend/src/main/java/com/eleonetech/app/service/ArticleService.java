@@ -31,18 +31,16 @@ public class ArticleService {
     private final ArticleRepository articleRepository;
     private final ClientRepository clientRepository;
     private final ProcessRepository processRepository;
-    private final FileStorageService fileStorageService;
+    private final CloudinaryService cloudinaryService;
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Transactional
     public ArticleResponse createArticle(CreateArticleRequest request) {
-        // Vérifier si la référence existe déjà
         if (articleRepository.existsByRef(request.getRef())) {
             throw new RuntimeException("Un article avec cette référence existe déjà");
         }
 
-        // Créer l'article
         Article article = Article.builder()
                 .ref(request.getRef())
                 .article(request.getArticle())
@@ -53,7 +51,7 @@ public class ArticleService {
                 .prixUnitaire(request.getPrixUnitaire())
                 .mpq(request.getMpq())
                 .stock(request.getStock() != null ? request.getStock() : 0)
-               // .imageFilename(request.getImageFilename())
+                .imageUrl(request.getImageUrl())
                 .isActive(true)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -75,7 +73,6 @@ public class ArticleService {
             for (ProcessDetailDTO processDetail : request.getProcesses()) {
                 Process process = processRepository.findByNom(processDetail.getName())
                         .orElseThrow(() -> new RuntimeException("Process non trouvé: " + processDetail.getName()));
-
                 article.addProcess(process, processDetail.getTempsParPF(), processDetail.getCadenceMax());
             }
         }
@@ -104,13 +101,11 @@ public class ArticleService {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Article non trouvé"));
 
-        // Vérifier si la nouvelle référence existe déjà (sauf si c'est le même article)
         if (!article.getRef().equals(request.getRef()) &&
                 articleRepository.existsByRef(request.getRef())) {
             throw new RuntimeException("Un article avec cette référence existe déjà");
         }
 
-        // Mettre à jour les champs de base
         article.setRef(request.getRef());
         article.setArticle(request.getArticle());
         article.setFamille(request.getFamille());
@@ -138,7 +133,6 @@ public class ArticleService {
             for (ProcessDetailDTO processDetail : request.getProcesses()) {
                 Process process = processRepository.findByNom(processDetail.getName())
                         .orElseThrow(() -> new RuntimeException("Process non trouvé: " + processDetail.getName()));
-
                 article.addProcess(process, processDetail.getTempsParPF(), processDetail.getCadenceMax());
             }
         }
@@ -154,18 +148,18 @@ public class ArticleService {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Article non trouvé"));
 
-        // Supprimer l'ancienne image si elle existe
-        if (article.getImageFilename() != null) {
-            fileStorageService.deleteImage(article.getImageFilename());
+        // Supprimer l'ancienne image de Cloudinary
+        if (article.getImageUrl() != null) {
+            cloudinaryService.deleteImage(article.getImageUrl());
         }
 
-        // Sauvegarder la nouvelle image
-        String filename = fileStorageService.saveImage(file);
-        article.setImageFilename(filename);
+        // Upload la nouvelle image sur Cloudinary
+        String imageUrl = cloudinaryService.uploadImage(file);
+        article.setImageUrl(imageUrl);
         article.setUpdatedAt(LocalDateTime.now());
 
         article = articleRepository.save(article);
-        log.info("Image mise à jour pour l'article: {} -> {}", article.getRef(), filename);
+        log.info("✅ Image Cloudinary mise à jour pour article {}: {}", article.getRef(), imageUrl);
 
         return mapToResponse(article);
     }
@@ -175,12 +169,12 @@ public class ArticleService {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Article non trouvé"));
 
-        if (article.getImageFilename() != null) {
-            fileStorageService.deleteImage(article.getImageFilename());
-            article.setImageFilename(null);
+        if (article.getImageUrl() != null) {
+            cloudinaryService.deleteImage(article.getImageUrl());
+            article.setImageUrl(null);
             article.setUpdatedAt(LocalDateTime.now());
             articleRepository.save(article);
-            log.info("Image supprimée pour l'article: {}", article.getRef());
+            log.info("✅ Image Cloudinary supprimée pour l'article: {}", article.getRef());
         }
     }
 
@@ -189,9 +183,9 @@ public class ArticleService {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Article non trouvé"));
 
-        // Supprimer l'image si elle existe
-        if (article.getImageFilename() != null) {
-            fileStorageService.deleteImage(article.getImageFilename());
+        // Supprimer l'image de Cloudinary si elle existe
+        if (article.getImageUrl() != null) {
+            cloudinaryService.deleteImage(article.getImageUrl());
         }
 
         articleRepository.deleteById(id);
@@ -311,7 +305,7 @@ public class ArticleService {
                 .prixUnitaire(article.getPrixUnitaire())
                 .mpq(article.getMpq())
                 .stock(article.getStock())
-                .imageFilename(article.getImageFilename())
+                .imageUrl(article.getImageUrl()) // ⚠️ Changé: imageFilename → imageUrl
                 .clients(clientNames)
                 .processes(processDetails)
                 .isActive(article.getIsActive())

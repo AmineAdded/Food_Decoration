@@ -41,7 +41,7 @@ public class Article {
     @Builder.Default
     private Integer stock = 0;
 
-    private String imageFilename;
+    private String imageUrl;
 
     // Références vers les clients (DBRef pour relation)
     @DBRef

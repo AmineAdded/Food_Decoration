@@ -109,7 +109,21 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.5</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.38.0</version>
+        </dependency>
+
     </dependencies>
+    <repositories>
+        <repository>
+            <id>cloudinary</id>
+            <name>Cloudinary Maven Repository</name>
+            <url>https://maven.cloudinary.com</url>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>
