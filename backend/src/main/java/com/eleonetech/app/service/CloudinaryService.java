@@ -34,7 +34,13 @@ public class CloudinaryService {
                 String nameWithoutExt = originalFilename.contains(".")
                         ? originalFilename.substring(0, originalFilename.lastIndexOf('.'))
                         : originalFilename;
-                publicId = "food_decoration_" + nameWithoutExt + "_" + UUID.randomUUID().toString().substring(0, 6);
+
+                // ✅ NETTOYER LE NOM : remplacer espaces par tirets ou underscores
+                String cleanName = nameWithoutExt
+                        .replaceAll("\\s+", "_")  // Remplacer espaces par _
+                        .replaceAll("[^a-zA-Z0-9_-]", ""); // Garder seulement alphanum, _ et -
+
+                publicId = "food_decoration_" + cleanName + "_" + UUID.randomUUID().toString().substring(0, 6);
             }
 
             // Upload vers Cloudinary
