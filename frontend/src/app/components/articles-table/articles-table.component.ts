@@ -573,6 +573,7 @@ export class ArticlesTableComponent implements OnInit {
                 this.isLoading.set(false);
               },
             });
+            console.log('📸 Image URL:', article.imageUrl);
           } else if (!article.imagePreview && !article.imageUrl) {
             this.articleService.deleteImage(article.id!).subscribe({
               next: () => {
