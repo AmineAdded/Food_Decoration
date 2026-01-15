@@ -27,7 +27,7 @@ interface Article {
   prixUnitaire: number; // Toujours stocké en TND
   mpq: number;
   stock: number;
-  imageFilename?: string;
+  imageUrl?: string;
   imagePreview?: string;
   imageFile?: File;
   processes: ProcessDetail[];
@@ -143,7 +143,7 @@ export class ArticlesTableComponent implements OnInit {
           prixUnitaire: a.prixUnitaire || 0,
           mpq: a.mpq || 0,
           stock: a.stock || 0,
-          imageFilename: a.imageFilename,
+          imageUrl: a.imageUrl,
           processes: a.processes || [],
           clients: a.clients || [],
           createdAt: a.createdAt,
@@ -208,7 +208,7 @@ export class ArticlesTableComponent implements OnInit {
           prixUnitaire: a.prixUnitaire || 0,
           mpq: a.mpq || 0,
           stock: a.stock || 0,
-          imageFilename: a.imageFilename,
+          imageUrl: a.imageUrl,
           processes: a.processes || [],
           clients: a.clients || [],
           createdAt: a.createdAt,
@@ -386,13 +386,23 @@ export class ArticlesTableComponent implements OnInit {
       const updated = [...articles];
       updated[realIndex].imagePreview = undefined;
       updated[realIndex].imageFile = undefined;
-      updated[realIndex].imageFilename = undefined;
+      updated[realIndex].imageUrl = undefined;
       return updated;
     });
   }
 
-  getImageUrl(filename: string): string {
-    return this.articleService.getImageUrl(filename);
+  // ✅ Crée une méthode pour obtenir l'URL de l'image (directement depuis imageUrl) :
+  getArticleImageUrl(article: Article): string {
+    // Si c'est une prévisualisation locale
+    if (article.imagePreview) {
+      return article.imagePreview;
+    }
+    // Si c'est une URL Cloudinary
+    if (article.imageUrl) {
+      return article.imageUrl;
+    }
+    // Sinon, image par défaut
+    return 'assets/images/default-article.png';
   }
 
   calculateTotalTime(processes: ProcessDetail[]): number {
@@ -563,7 +573,7 @@ export class ArticlesTableComponent implements OnInit {
                 this.isLoading.set(false);
               },
             });
-          } else if (!article.imagePreview && !article.imageFilename) {
+          } else if (!article.imagePreview && !article.imageUrl) {
             this.articleService.deleteImage(article.id!).subscribe({
               next: () => {
                 this.loadArticles();
@@ -588,6 +598,12 @@ export class ArticlesTableComponent implements OnInit {
         },
       });
     }
+  }
+  // Méthode pour gérer les erreurs de chargement d'image
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.src = 'assets/images/default-article.png';
+    img.style.opacity = '0.5';
   }
 
   cancelEdit(index: number) {

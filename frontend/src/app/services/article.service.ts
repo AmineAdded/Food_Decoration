@@ -50,7 +50,7 @@ export interface ArticleResponse {
   prixUnitaire: number;
   mpq: number;
   stock: number;
-  imageFilename?: string;
+  imageUrl?: string;
   clients: string[];
   processes: ProcessDetail[];
   isActive: boolean;
