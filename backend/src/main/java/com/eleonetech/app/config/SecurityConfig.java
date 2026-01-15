@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/health", "/api/health", "/actuator/health").permitAll()
+                        .requestMatchers("api/auth/**","/health", "/api/health", "/actuator/health").permitAll()
                         // ✅ AJOUTER CETTE LIGNE : Autoriser l'accès public aux images
                         .requestMatchers("/api/articles/image/**").permitAll()
                         .anyRequest().authenticated()
