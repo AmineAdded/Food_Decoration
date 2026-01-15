@@ -125,7 +125,7 @@
                 <!-- Affichage de l'image -->
                 <div class="image-container" *ngIf="article.imagePreview || article.imageUrl">
                   <img
-                    [src]="article.imagePreview || article.imageUrl || 'assets/images/default-article.png'"
+                    [src]="getArticleImageUrl(article)"
                     alt="Image de l'article"
                     class="article-image"
                     (error)="onImageError($event)"
