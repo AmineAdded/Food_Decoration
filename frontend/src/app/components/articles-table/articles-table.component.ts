@@ -524,6 +524,7 @@ export class ArticlesTableComponent implements OnInit {
                 this.loadArticles();
                 this.loadDistinctValues();
                 this.isLoading.set(false);
+                console.log('📸 Image URL:', article.imageUrl);
               },
               error: (err) => {
                 this.errorMessage.set("Article créé mais erreur lors de l'upload de l'image");
@@ -532,6 +533,7 @@ export class ArticlesTableComponent implements OnInit {
                 this.isLoading.set(false);
               },
             });
+            console.log('📸 Image URL:', article.imageUrl);
           } else {
             this.loadArticles();
             this.loadDistinctValues();
@@ -566,6 +568,7 @@ export class ArticlesTableComponent implements OnInit {
                 this.loadArticles();
                 this.loadDistinctValues();
                 this.isLoading.set(false);
+                console.log('📸 Image URL:', article.imageUrl);
               },
               error: () => {
                 this.loadArticles();
