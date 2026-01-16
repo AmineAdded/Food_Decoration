@@ -1,5 +1,23 @@
 <!-- frontend/src/app/components/articles-table/articles-table.component.html -->
 <div class="articles-container">
+   <!-- Indicateur de chargement global -->
+  <div class="loading-overlay" *ngIf="isLoading()">
+    <div class="loading-spinner">
+      <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="10" stroke-width="3" stroke-dasharray="50" stroke-dashoffset="0">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="0 12 12"
+            to="360 12 12"
+            dur="1s"
+            repeatCount="indefinite"
+          />
+        </circle>
+      </svg>
+      <p>Chargement en cours...</p>
+    </div>
+  </div>
   <div class="table-header">
     <h2>Fiche d'Article</h2>
     <div class="header-actions">

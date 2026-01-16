@@ -523,21 +523,16 @@ export class ArticlesTableComponent implements OnInit {
               next: () => {
                 this.loadArticles();
                 this.loadDistinctValues();
-                this.isLoading.set(false);
-                console.log('📸 Image URL:', article.imageUrl);
               },
               error: (err) => {
                 this.errorMessage.set("Article créé mais erreur lors de l'upload de l'image");
                 this.loadArticles();
                 this.loadDistinctValues();
-                this.isLoading.set(false);
               },
             });
-            console.log('📸 Image URL:', article.imageUrl);
           } else {
             this.loadArticles();
             this.loadDistinctValues();
-            this.isLoading.set(false);
           }
         },
         error: (err) => {
@@ -567,33 +562,26 @@ export class ArticlesTableComponent implements OnInit {
               next: () => {
                 this.loadArticles();
                 this.loadDistinctValues();
-                this.isLoading.set(false);
-                console.log('📸 Image URL:', article.imageUrl);
               },
               error: () => {
                 this.loadArticles();
                 this.loadDistinctValues();
-                this.isLoading.set(false);
               },
             });
-            console.log('📸 Image URL:', article.imageUrl);
           } else if (!article.imagePreview && !article.imageUrl) {
             this.articleService.deleteImage(article.id!).subscribe({
               next: () => {
                 this.loadArticles();
                 this.loadDistinctValues();
-                this.isLoading.set(false);
               },
               error: () => {
                 this.loadArticles();
                 this.loadDistinctValues();
-                this.isLoading.set(false);
               },
             });
           } else {
             this.loadArticles();
             this.loadDistinctValues();
-            this.isLoading.set(false);
           }
         },
         error: (err) => {
@@ -651,7 +639,6 @@ export class ArticlesTableComponent implements OnInit {
       next: () => {
         this.loadArticles();
         this.loadDistinctValues();
-        this.isLoading.set(false);
       },
       error: (err) => {
         console.error(err);
