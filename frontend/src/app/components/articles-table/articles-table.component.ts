@@ -501,6 +501,14 @@ export class ArticlesTableComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
+    // Fonction pour gérer la fin du chargement avec un délai minimum
+    const finishLoading = () => {
+      setTimeout(() => {
+        this.loadArticles();
+        this.loadDistinctValues();
+      }, 800); // Délai minimum pour que l'utilisateur voie le loading
+    };
+
     if (article.isNew) {
       const request: CreateArticleRequest = {
         ref: article.ref,
@@ -520,19 +528,14 @@ export class ArticlesTableComponent implements OnInit {
         next: (response) => {
           if (article.imageFile) {
             this.articleService.uploadImage(response.id, article.imageFile).subscribe({
-              next: () => {
-                this.loadArticles();
-                this.loadDistinctValues();
-              },
+              next: () => finishLoading(),
               error: (err) => {
                 this.errorMessage.set("Article créé mais erreur lors de l'upload de l'image");
-                this.loadArticles();
-                this.loadDistinctValues();
+                finishLoading();
               },
             });
           } else {
-            this.loadArticles();
-            this.loadDistinctValues();
+            finishLoading();
           }
         },
         error: (err) => {
@@ -559,29 +562,16 @@ export class ArticlesTableComponent implements OnInit {
         next: () => {
           if (article.imageFile) {
             this.articleService.uploadImage(article.id!, article.imageFile).subscribe({
-              next: () => {
-                this.loadArticles();
-                this.loadDistinctValues();
-              },
-              error: () => {
-                this.loadArticles();
-                this.loadDistinctValues();
-              },
+              next: () => finishLoading(),
+              error: () => finishLoading(),
             });
           } else if (!article.imagePreview && !article.imageUrl) {
             this.articleService.deleteImage(article.id!).subscribe({
-              next: () => {
-                this.loadArticles();
-                this.loadDistinctValues();
-              },
-              error: () => {
-                this.loadArticles();
-                this.loadDistinctValues();
-              },
+              next: () => finishLoading(),
+              error: () => finishLoading(),
             });
           } else {
-            this.loadArticles();
-            this.loadDistinctValues();
+            finishLoading();
           }
         },
         error: (err) => {
