@@ -18,22 +18,24 @@ public class HealthController {
         return ResponseEntity.ok("OK");
     }
 
-    @GetMapping("/api/health") // Pour UptimeRobot / Render
+    @GetMapping("/api/health")
     public ResponseEntity<Map<String, Object>> apiHealth() {
 
         Runtime runtime = Runtime.getRuntime();
-        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+
+        long used = runtime.totalMemory() - runtime.freeMemory();
+        long total = runtime.totalMemory();
+        long max = runtime.maxMemory();
 
         Map<String, Object> response = new HashMap<>();
         response.put("status", "UP");
         response.put("service", "backend-springboot");
 
-        response.put("memory_used_mb",
-                (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024));
-        response.put("memory_total_mb",
-                runtime.totalMemory() / (1024 * 1024));
+        response.put("ram_used_mb", used / (1024 * 1024));
+        response.put("ram_total_mb", max / (1024 * 1024)); // 👈 512 MB
+        response.put("ram_usage_percent",
+                (used * 100) / max);
 
-        response.put("uptime_ms", runtimeMXBean.getUptime());
         response.put("timestamp", Instant.now().toString());
 
         return ResponseEntity.ok(response);
