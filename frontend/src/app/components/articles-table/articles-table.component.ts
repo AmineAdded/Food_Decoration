@@ -506,7 +506,7 @@ export class ArticlesTableComponent implements OnInit {
       setTimeout(() => {
         this.loadArticles();
         this.loadDistinctValues();
-      }, 800); // Délai minimum pour que l'utilisateur voie le loading
+      }, 400); // Délai minimum pour que l'utilisateur voie le loading
     };
 
     if (article.isNew) {
