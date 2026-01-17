@@ -237,19 +237,26 @@ export class TauxChargeComponent implements OnInit, AfterViewInit {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+          padding: {
+            top: 20, // ✅ RÉDUIT: Moins d'espace nécessaire maintenant
+            bottom: 10,
+          }
+        },
         plugins: {
           datalabels: {
-            anchor: 'end',
-            align: 'top',
+            anchor: 'center', // ✅ CHANGÉ: Centré dans la barre
+            align: 'center', // ✅ CHANGÉ: Aligné au centre
             formatter: (value) => value.toFixed(0) + '%',
-            font: { size: 12, weight: 'bold' },
-            color: '#333',
+            font: { size: 13, weight: 'bold' },
+            color: '#FFFFFF', // ✅ CHANGÉ: Texte blanc pour contraster avec les barres colorées
           },
           legend: {
             display: true,
             position: 'top',
+            align: 'center', // ✅ AJOUT: Centrer la légende
             labels: {
-              padding: 40,
+              padding: 20, // ✅ MODIFIÉ: Espace entre les items de légende
               boxWidth: 30,
               boxHeight: 18,
               generateLabels: () => [
