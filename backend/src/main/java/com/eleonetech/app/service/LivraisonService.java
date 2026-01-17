@@ -43,13 +43,24 @@ public class LivraisonService {
         Client client = clientRepository.findByNomComplet(request.getClientNom())
                 .orElseThrow(() -> new RuntimeException("Client non trouvé: " + request.getClientNom()));
 
-        // ✅ Trouver la commande avec les nouveaux champs
+        // Trouver la commande
         List<Commande> commandes = commandeRepository.findByArticleRef(request.getArticleRef());
         Commande commande = commandes.stream()
                 .filter(c -> c.getNumeroCommandeClient().equals(request.getNumeroCommandeClient()))
                 .filter(c -> c.getClientNom().equals(request.getClientNom()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
+
+        LocalDate dateLivraison = LocalDate.parse(request.getDateLivraison(), DATE_FORMATTER);
+
+        // ✅ VÉRIFIER L'UNICITÉ: Numéro de commande + Date de livraison
+        boolean exists = livraisonRepository.findByNumeroCommande(request.getNumeroCommandeClient())
+                .stream()
+                .anyMatch(l -> l.getDateLivraison().equals(dateLivraison) && l.getIsActive());
+
+        if (exists) {
+            throw new RuntimeException("Une livraison existe déjà pour cette commande à cette date");
+        }
 
         // Vérifier le stock disponible
         if (article.getStock() < request.getQuantiteLivree()) {
@@ -65,12 +76,10 @@ public class LivraisonService {
             throw new RuntimeException("Quantité trop élevée. Quantité restante à livrer: " + quantiteRestante);
         }
 
-        LocalDate dateLivraison = LocalDate.parse(request.getDateLivraison(), DATE_FORMATTER);
-
         // Générer le numéro BL
         String numeroBL = generateNumeroBL(dateLivraison.getYear());
 
-        // ✅ Créer la livraison avec IDs et données dénormalisées
+        // Créer la livraison avec IDs et données dénormalisées
         Livraison livraison = Livraison.builder()
                 .numeroBL(numeroBL)
                 .articleId(article.getId())
@@ -114,14 +123,12 @@ public class LivraisonService {
     }
 
     private String generateNumeroBL(int year) {
-        // ✅ Chercher par pattern de l'année
         List<Livraison> livraisons = livraisonRepository.findByNumeroBLContaining("/" + year);
 
         if (livraisons.isEmpty()) {
             return "1/" + year;
         }
 
-        // Trouver le plus grand numéro pour cette année
         int maxNumber = livraisons.stream()
                 .map(l -> {
                     String[] parts = l.getNumeroBL().split("/");
@@ -176,21 +183,38 @@ public class LivraisonService {
         Livraison livraison = livraisonRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Livraison non trouvée"));
 
-        // Restaurer l'ancien stock
+        LocalDate dateLivraison = LocalDate.parse(request.getDateLivraison(), DATE_FORMATTER);
+
+        // ✅ VÉRIFIER L'UNICITÉ si le numéro de commande ou la date change
+        if (!livraison.getNumeroCommandeClient().equals(request.getNumeroCommandeClient()) ||
+                !livraison.getDateLivraison().equals(dateLivraison)) {
+
+            boolean exists = livraisonRepository.findByNumeroCommande(request.getNumeroCommandeClient())
+                    .stream()
+                    .anyMatch(l -> l.getDateLivraison().equals(dateLivraison) &&
+                            l.getIsActive() &&
+                            !l.getId().equals(id));
+
+            if (exists) {
+                throw new RuntimeException("Une livraison existe déjà pour cette commande à cette date");
+            }
+        }
+
+        // ✅ CORRECTION: Gérer le stock correctement
+        // 1. Charger l'ancien article
         Article oldArticle = articleRepository.findById(livraison.getArticleId())
                 .orElseThrow(() -> new RuntimeException("Article original non trouvé"));
+
         int oldQuantite = livraison.getQuantiteLivree();
-        oldArticle.setStock(oldArticle.getStock() + oldQuantite);
-        oldArticle.setUpdatedAt(LocalDateTime.now());
 
-        // Nouveau article
-        Article newArticle = articleRepository.findByRef(request.getArticleRef())
-                .orElseThrow(() -> new RuntimeException("Article non trouvé: " + request.getArticleRef()));
-
+        // 2. Charger le nouveau client et article
         Client newClient = clientRepository.findByNomComplet(request.getClientNom())
                 .orElseThrow(() -> new RuntimeException("Client non trouvé: " + request.getClientNom()));
 
-        // ✅ Trouver la nouvelle commande
+        Article newArticle = articleRepository.findByRef(request.getArticleRef())
+                .orElseThrow(() -> new RuntimeException("Article non trouvé: " + request.getArticleRef()));
+
+        // 3. Trouver la nouvelle commande
         List<Commande> commandes = commandeRepository.findByArticleRef(request.getArticleRef());
         Commande newCommande = commandes.stream()
                 .filter(c -> c.getNumeroCommandeClient().equals(request.getNumeroCommandeClient()))
@@ -198,14 +222,51 @@ public class LivraisonService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
 
-        // Vérifier le stock
-        if (newArticle.getStock() < request.getQuantiteLivree()) {
-            throw new RuntimeException("Stock insuffisant");
+        // 4. Si c'est le MÊME article
+        if (oldArticle.getId().equals(newArticle.getId())) {
+            // Calculer la différence de quantité
+            int difference = request.getQuantiteLivree() - oldQuantite;
+
+            log.info("🔄 Mise à jour livraison - Article: {}, Ancienne qté: {}, Nouvelle qté: {}, Différence: {}",
+                    oldArticle.getRef(), oldQuantite, request.getQuantiteLivree(), difference);
+
+            // Vérifier le stock avant la modification
+            // Stock actuel + ancienne quantité - nouvelle quantité
+            int stockApresModification = newArticle.getStock() - difference;
+            if (stockApresModification < 0) {
+                throw new RuntimeException("Stock insuffisant. Stock disponible: " + newArticle.getStock());
+            }
+
+            // Ajuster le stock avec la différence (négatif si on livre plus)
+            newArticle.setStock(stockApresModification);
+
+            log.info("📦 Stock mis à jour: {} (retrait de {})", newArticle.getStock(), difference);
+        }
+        // 5. Si c'est un ARTICLE DIFFÉRENT
+        else {
+            log.info("🔄 Changement d'article - Ancien: {}, Nouveau: {}",
+                    oldArticle.getRef(), newArticle.getRef());
+
+            // Remettre la quantité à l'ancien article
+            oldArticle.setStock(oldArticle.getStock() + oldQuantite);
+            oldArticle.setUpdatedAt(LocalDateTime.now());
+            articleRepository.save(oldArticle);
+
+            log.info("📦 Stock ancien article: {} (ajout de {})", oldArticle.getStock(), oldQuantite);
+
+            // Vérifier le stock du nouveau article
+            if (newArticle.getStock() < request.getQuantiteLivree()) {
+                throw new RuntimeException("Stock insuffisant pour le nouvel article. Stock disponible: " +
+                        newArticle.getStock());
+            }
+
+            // Retirer du nouveau article
+            newArticle.setStock(newArticle.getStock() - request.getQuantiteLivree());
+
+            log.info("📦 Stock nouveau article: {} (retrait de {})", newArticle.getStock(), request.getQuantiteLivree());
         }
 
-        LocalDate dateLivraison = LocalDate.parse(request.getDateLivraison(), DATE_FORMATTER);
-
-        // ✅ Mettre à jour avec IDs et données dénormalisées
+        // 6. Mettre à jour la livraison
         livraison.setArticleId(newArticle.getId());
         livraison.setArticleRef(newArticle.getRef());
         livraison.setArticleNom(newArticle.getArticle());
@@ -219,17 +280,11 @@ public class LivraisonService {
 
         livraison = livraisonRepository.save(livraison);
 
-        // Déduire du nouveau stock
-        newArticle.setStock(newArticle.getStock() - request.getQuantiteLivree());
+        // 7. Sauvegarder l'article mis à jour
         newArticle.setUpdatedAt(LocalDateTime.now());
         articleRepository.save(newArticle);
 
-        // Sauvegarder l'ancien article si différent
-        if (!oldArticle.getId().equals(newArticle.getId())) {
-            articleRepository.save(oldArticle);
-        }
-
-        log.info("Livraison mise à jour: ID {}", id);
+        log.info("✅ Livraison mise à jour: ID {}", id);
 
         livraison.setArticle(newArticle);
         livraison.setClient(newClient);
@@ -260,10 +315,7 @@ public class LivraisonService {
         log.info("Livraison supprimée: ID {} - Commande réactivée", id);
     }
 
-    // ============ MÉTHODES PRIVÉES ============
-
     private LivraisonResponse loadEntitiesAndMap(Livraison livraison) {
-        // Charger les entités si pas déjà présentes
         if (livraison.getArticle() == null) {
             Article article = articleRepository.findById(livraison.getArticleId())
                     .orElseThrow(() -> new RuntimeException("Article non trouvé"));
@@ -286,7 +338,6 @@ public class LivraisonService {
     }
 
     private LivraisonResponse mapToResponse(Livraison livraison) {
-        // Utiliser les données dénormalisées si les objets ne sont pas chargés
         String articleRef = livraison.getArticle() != null ?
                 livraison.getArticle().getRef() : livraison.getArticleRef();
         String articleNom = livraison.getArticle() != null ?

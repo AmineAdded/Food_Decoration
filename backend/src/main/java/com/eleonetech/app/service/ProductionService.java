@@ -37,7 +37,16 @@ public class ProductionService {
         // Parser la date
         LocalDate dateProduction = LocalDate.parse(request.getDateProduction(), DATE_FORMATTER);
 
-        // ✅ Créer la production avec articleId et articleRef
+        // ✅ VÉRIFIER L'UNICITÉ: Ref Article + Date de Production
+        boolean exists = productionRepository.findByArticleRefAndDate(article.getRef(), dateProduction)
+                .stream()
+                .anyMatch(p -> p.getIsActive());
+
+        if (exists) {
+            throw new RuntimeException("Une production existe déjà pour cet article à cette date");
+        }
+
+        // Créer la production avec articleId et articleRef
         Production production = Production.builder()
                 .articleId(article.getId())
                 .articleRef(article.getRef())
@@ -125,22 +134,65 @@ public class ProductionService {
         Production production = productionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Production non trouvée"));
 
-        // ANNULER L'ANCIENNE QUANTITÉ DU STOCK
+        // Parser la nouvelle date
+        LocalDate dateProduction = LocalDate.parse(request.getDateProduction(), DATE_FORMATTER);
+
+        // ✅ VÉRIFIER L'UNICITÉ si l'article ou la date change
+        if (!production.getArticleRef().equals(request.getArticleRef()) ||
+                !production.getDateProduction().equals(dateProduction)) {
+
+            boolean exists = productionRepository.findByArticleRefAndDate(request.getArticleRef(), dateProduction)
+                    .stream()
+                    .anyMatch(p -> p.getIsActive() && !p.getId().equals(id));
+
+            if (exists) {
+                throw new RuntimeException("Une production existe déjà pour cet article à cette date");
+            }
+        }
+
+        // ✅ CORRECTION: Gérer le stock correctement
+        // 1. Charger l'ancien article
         Article oldArticle = articleRepository.findById(production.getArticleId())
                 .orElseThrow(() -> new RuntimeException("Article original non trouvé"));
 
         int oldQuantite = production.getQuantite();
-        oldArticle.setStock(oldArticle.getStock() - oldQuantite);
-        oldArticle.setUpdatedAt(LocalDateTime.now());
 
-        // Trouver le nouvel article
+        // 2. Charger le nouvel article
         Article newArticle = articleRepository.findByRef(request.getArticleRef())
                 .orElseThrow(() -> new RuntimeException("Article non trouvé: " + request.getArticleRef()));
 
-        // Parser la nouvelle date
-        LocalDate dateProduction = LocalDate.parse(request.getDateProduction(), DATE_FORMATTER);
+        // 3. Si c'est le MÊME article
+        if (oldArticle.getId().equals(newArticle.getId())) {
+            // Calculer la différence de quantité
+            int difference = request.getQuantite() - oldQuantite;
 
-        // ✅ Mettre à jour avec articleId et articleRef
+            log.info("🔄 Mise à jour production - Article: {}, Ancienne qté: {}, Nouvelle qté: {}, Différence: {}",
+                    oldArticle.getRef(), oldQuantite, request.getQuantite(), difference);
+
+            // Ajuster le stock avec la différence
+            newArticle.setStock(newArticle.getStock() + difference);
+
+            log.info("📦 Stock mis à jour: {} (ajout de {})", newArticle.getStock(), difference);
+        }
+        // 4. Si c'est un ARTICLE DIFFÉRENT
+        else {
+            log.info("🔄 Changement d'article - Ancien: {}, Nouveau: {}",
+                    oldArticle.getRef(), newArticle.getRef());
+
+            // Retirer la quantité de l'ancien article
+            oldArticle.setStock(oldArticle.getStock() - oldQuantite);
+            oldArticle.setUpdatedAt(LocalDateTime.now());
+            articleRepository.save(oldArticle);
+
+            log.info("📦 Stock ancien article: {} (retrait de {})", oldArticle.getStock(), oldQuantite);
+
+            // Ajouter la quantité au nouveau article
+            newArticle.setStock(newArticle.getStock() + request.getQuantite());
+
+            log.info("📦 Stock nouveau article: {} (ajout de {})", newArticle.getStock(), request.getQuantite());
+        }
+
+        // 5. Mettre à jour la production
         production.setArticleId(newArticle.getId());
         production.setArticleRef(newArticle.getRef());
         production.setQuantite(request.getQuantite());
@@ -149,17 +201,11 @@ public class ProductionService {
 
         production = productionRepository.save(production);
 
-        // AJOUTER LA NOUVELLE QUANTITÉ AU STOCK
-        newArticle.setStock(newArticle.getStock() + request.getQuantite());
+        // 6. Sauvegarder l'article mis à jour
         newArticle.setUpdatedAt(LocalDateTime.now());
         articleRepository.save(newArticle);
 
-        // Sauvegarder l'ancien article si différent
-        if (!oldArticle.getId().equals(newArticle.getId())) {
-            articleRepository.save(oldArticle);
-        }
-
-        log.info("Production mise à jour: ID {} - {} unités de {}",
+        log.info("✅ Production mise à jour: ID {} - {} unités de {}",
                 id, request.getQuantite(), newArticle.getArticle());
 
         production.setArticle(newArticle);
@@ -183,7 +229,6 @@ public class ProductionService {
         log.info("Production supprimée: ID {} - Stock mis à jour pour {}", id, article.getArticle());
     }
 
-    // ✅ Méthode helper pour charger l'article
     private ProductionResponse loadArticleAndMap(Production production) {
         Article article = articleRepository.findById(production.getArticleId())
                 .orElseThrow(() -> new RuntimeException("Article non trouvé: " + production.getArticleId()));
